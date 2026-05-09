@@ -1,0 +1,76 @@
+package com.bpcl.audit_portal.common.exceptions;
+
+import org.springframework.http.HttpStatus;
+
+public enum Errors {
+
+    INVALID_TOKEN(HttpStatus.UNAUTHORIZED, 1001L,
+            "Your session token is invalid. Please log in again."),
+
+    INTERNAL_ISSUE(HttpStatus.INTERNAL_SERVER_ERROR, 1002L,
+            "Something went wrong on our side. Please try again later."),
+
+    USER_NOT_REGISTERED(HttpStatus.NOT_FOUND, 1003L,
+            "No account found for given credentials."),
+
+    USER_NOT_FOUND(HttpStatus.NOT_FOUND, 1004L,
+            "The requested user could not be found."),
+
+    ROLE_NOT_FOUND(HttpStatus.NOT_FOUND, 1005L,
+            "The specified role does not exist."),
+
+    REFRESH_TOKEN_EXPIRED(HttpStatus.UNAUTHORIZED, 1006L,
+            "Your session has expired. Please log in again."),
+
+    UNAUTHORIZED(HttpStatus.UNAUTHORIZED, 1016L,
+            "You are not authorized to access this resource. Please log in."),
+
+    INVALID_PERMISSIONS(HttpStatus.BAD_REQUEST, 1017L,
+            "One or more provided permissions are invalid."),
+
+    REFRESH_TOKEN_NOT_FOUND(HttpStatus.NOT_FOUND, 1007L,
+            "Refresh token not found. Please authenticate again."),
+
+    MAIL_SEND_FAILING(HttpStatus.INTERNAL_SERVER_ERROR, 1008L,
+            "Unable to send email at the moment. Please try again later."),
+
+    USERNAME_ALREADY_IN_USE(HttpStatus.CONFLICT, 1011L,
+            "This username is already taken."),
+
+    INSUFFICIENT_PERMISSION(HttpStatus.FORBIDDEN, 1012L,
+            "You do not have permission to perform this action."),
+
+    INVALID_PASSWORD_RESET_TOKEN(HttpStatus.BAD_REQUEST, 1013L,
+            "Password reset failed"),
+
+    PASSWORD_RESET_TOKEN_ALREADY_USED(HttpStatus.BAD_REQUEST, 1014L,
+            "Password reset failed"),
+
+    INVALID_ASSIGNMENT(HttpStatus.BAD_REQUEST, 1018L,
+            "Invalid assignment based on role hierarchy."),
+
+    PASSWORD_RESET_TOKEN_EXPIRED(HttpStatus.BAD_REQUEST, 1015L,
+            "Password reset failed");
+
+    private final HttpStatus httpStatus;
+    private final Long errorCode;
+    private final String errorMessage;
+
+    Errors(HttpStatus httpStatus, Long errorCode, String errorMessage) {
+        this.httpStatus = httpStatus;
+        this.errorCode = errorCode;
+        this.errorMessage = errorMessage;
+    }
+
+    public HttpStatus getHttpStatus() {
+        return httpStatus;
+    }
+
+    public Long getErrorCode() {
+        return errorCode;
+    }
+
+    public String getErrorMessage() {
+        return errorMessage;
+    }
+}
