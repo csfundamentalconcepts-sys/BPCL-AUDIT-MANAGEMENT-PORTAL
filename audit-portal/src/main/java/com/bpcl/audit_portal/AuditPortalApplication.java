@@ -9,5 +9,4 @@ public class AuditPortalApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(AuditPortalApplication.class, args);
 	}
-
 }
