@@ -49,11 +49,11 @@ public class User {
     @Builder.Default
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
-            name = "user_permissions",
+            name = "user_applications",
             joinColumns = @JoinColumn(name = "user_id"),
-            inverseJoinColumns = @JoinColumn(name = "permission_id")
+            inverseJoinColumns = @JoinColumn(name = "application_id")
     )
-    private List<Permission> permissions = new ArrayList<>();
+    private List<Application> applications = new ArrayList<>();
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by")
@@ -71,7 +71,7 @@ public class User {
 
     @Builder.Default
     @Column(name = "is_active")
-    private Boolean isActive = true;
+    private Boolean isActive = false;
 
     @CreationTimestamp
     @Column(updatable = false)

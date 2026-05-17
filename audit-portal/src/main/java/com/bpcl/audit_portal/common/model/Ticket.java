@@ -7,7 +7,6 @@ import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
@@ -28,13 +27,13 @@ public class Ticket {
 
     private String assignedTo;
 
-    private LocalDate startDate;
+    private String startDate;
 
-    private LocalDate targetDate;
+    private String targetDate;
 
-    private LocalDate actualCompletionDate;
+    private String actualCompletionDate;
 
-    private LocalDate deploymentDate;
+    private String deploymentDate;
 
     private Integer storyPoint;
 
@@ -53,6 +52,12 @@ public class Ticket {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private TicketType type;
+
+    @Column(name = "head_comment")
+    private String headComment;
+
+    @Column(name = "spoc_comment")
+    private String spocComment;
 
     @CreationTimestamp
     @Column(updatable = false)

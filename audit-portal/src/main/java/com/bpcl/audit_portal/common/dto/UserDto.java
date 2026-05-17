@@ -10,8 +10,12 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 public class UserDto {
+
     private Long id;
+
     private String userName;
+
     private String role;
-    private List<String> permissions;
+
+    private List<Long> applicationIds;
 }

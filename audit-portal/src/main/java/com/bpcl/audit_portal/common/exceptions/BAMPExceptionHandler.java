@@ -8,14 +8,9 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 public class BAMPExceptionHandler{
 
     @ExceptionHandler(BAMPException.class)
-    public ResponseEntity<ErrorResponse> handleBAMPException(BAMPException ex) {
+    public ResponseEntity<?> handleBAMPException(BAMPException ex) {
 
         Errors error = ex.getError();
-
-        ErrorResponse response = new ErrorResponse(
-                error.getErrorCode(),
-                error.getErrorMessage()
-        );
-        return new ResponseEntity<>(response, error.getHttpStatus());
+        return new ResponseEntity<>(error.getErrorMessage(), error.getHttpStatus());
     }
 }
