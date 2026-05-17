@@ -1,4 +1,4 @@
-package com.bpcl.audit_portal.common.model;
+package com.bpcl.audit_portal.common.dto;
 
 import com.bpcl.audit_portal.auth.model.RefreshToken;
 import lombok.Data;

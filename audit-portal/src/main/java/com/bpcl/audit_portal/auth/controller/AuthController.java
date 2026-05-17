@@ -4,10 +4,11 @@ import com.bpcl.audit_portal.auth.jwt.JwtUtils;
 import com.bpcl.audit_portal.auth.model.UserDetailsImplementation;
 import com.bpcl.audit_portal.auth.service.AuthService;
 import com.bpcl.audit_portal.auth.service.RefreshTokenService;
+import com.bpcl.audit_portal.common.dto.AuthResponse;
+import com.bpcl.audit_portal.common.dto.LoginRequest;
 import com.bpcl.audit_portal.common.dto.UserDto;
 import com.bpcl.audit_portal.common.mapper.UserDtoMapper;
 import com.bpcl.audit_portal.common.model.*;
-import com.bpcl.audit_portal.common.repository.PermissionRepository;
 import com.bpcl.audit_portal.common.repository.RoleRepository;
 import com.bpcl.audit_portal.common.repository.UserRepository;
 import com.bpcl.audit_portal.common.service.UserService;
@@ -32,13 +33,11 @@ public class AuthController {
     private final RefreshTokenService refreshTokenService;
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
-    private final PermissionRepository permissionRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuthService authService;
-    public  AuthController(JwtUtils jwtUtils, UserRepository userRepository, UserService userService, UserDtoMapper userDtoMapper, RefreshTokenService refreshTokenService, RoleRepository roleRepository, PermissionRepository permissionRepository, PasswordEncoder passwordEncoder, AuthService authService){
+    public  AuthController(JwtUtils jwtUtils, UserRepository userRepository, UserService userService, UserDtoMapper userDtoMapper, RefreshTokenService refreshTokenService, RoleRepository roleRepository,  PasswordEncoder passwordEncoder, AuthService authService){
         this.jwtUtils=jwtUtils;
         this.roleRepository = roleRepository;
-        this.permissionRepository = permissionRepository;
         this.passwordEncoder = passwordEncoder;
         this.userService = userService;
         this.userDtoMapper = userDtoMapper;
@@ -91,18 +90,18 @@ public class AuthController {
                 .body(authResponse.getLoginResponse());
     }
 
-//    @PostMapping("/forgot-password")
-//    public ResponseEntity<?> forgotPassword(@RequestParam String email) {
-//        authService.forgotPassword(email);
-//        return ResponseEntity.ok("Password reset link has been sent.");
-//    }
+    @PostMapping("/forgot-password")
+    public ResponseEntity<?> forgotPassword(@RequestParam String email) {
+        authService.forgotPassword(email);
+        return ResponseEntity.ok("Password reset link has been sent.");
+    }
 
-//    @PostMapping("/password-reset")
-//    public ResponseEntity<?> passwordReset(@RequestParam String token , @RequestParam String newPassword){
-//        authService.resetPassword(token, newPassword);
-//        return ResponseEntity.ok("Password reset is  successful.");
-//
-//    }
+    @PostMapping("/password-reset")
+    public ResponseEntity<?> passwordReset(@RequestParam String token , @RequestParam String newPassword){
+        authService.resetPassword(token, newPassword);
+        return ResponseEntity.ok("Password reset is  successful.");
+
+    }
 
     @PostMapping("/logout")
     public ResponseEntity<?> logOutUser(HttpServletRequest request) {

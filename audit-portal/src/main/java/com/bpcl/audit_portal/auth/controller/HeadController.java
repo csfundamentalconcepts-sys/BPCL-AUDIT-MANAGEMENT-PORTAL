@@ -2,7 +2,7 @@ package com.bpcl.audit_portal.auth.controller;
 
 import com.bpcl.audit_portal.auth.model.UserDetailsImplementation;
 import com.bpcl.audit_portal.auth.service.AuthService;
-import com.bpcl.audit_portal.common.model.SignUpRequest;
+import com.bpcl.audit_portal.common.dto.SignUpRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;

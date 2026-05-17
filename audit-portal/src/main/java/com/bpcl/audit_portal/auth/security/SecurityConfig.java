@@ -34,7 +34,9 @@ public class SecurityConfig {
                                 .requestMatchers("/api/head/**").hasRole("HEAD")
                                 .requestMatchers("/api/spoc/**").hasRole("SPOC")
                                 .requestMatchers("/api/developer/**").hasRole("DEVELOPER")
-                                .requestMatchers("/api/scrum-master").hasRole("SCRUM_MASTER")
+                                .requestMatchers("/api/scrum-master/**").hasRole("SCRUM_MASTER")
+                                .requestMatchers("/api/tickets/**").authenticated()
+                                .requestMatchers("/api/applications/**").authenticated()
                                 .anyRequest().authenticated())
 
                 .addFilterBefore(authTokenFilter, UsernamePasswordAuthenticationFilter.class)

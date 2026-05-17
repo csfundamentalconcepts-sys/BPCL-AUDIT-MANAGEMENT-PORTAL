@@ -16,6 +16,12 @@ public enum Errors {
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, 1004L,
             "The requested user could not be found."),
 
+    APPLICATION_NOT_FOUND(HttpStatus.NOT_FOUND, 1019L,
+            "Application not found."),
+
+    TICKET_NOT_FOUND(HttpStatus.NOT_FOUND, 1020L,
+            "Ticket not found."),
+
     ROLE_NOT_FOUND(HttpStatus.NOT_FOUND, 1005L,
             "The specified role does not exist."),
 
@@ -27,6 +33,9 @@ public enum Errors {
 
     INVALID_PERMISSIONS(HttpStatus.BAD_REQUEST, 1017L,
             "One or more provided permissions are invalid."),
+
+    INVALID_FIELD_NAME(HttpStatus.BAD_REQUEST, 1017L,
+            " field name is invalid."),
 
     REFRESH_TOKEN_NOT_FOUND(HttpStatus.NOT_FOUND, 1007L,
             "Refresh token not found. Please authenticate again."),
@@ -50,7 +59,22 @@ public enum Errors {
             "Invalid assignment based on role hierarchy."),
 
     PASSWORD_RESET_TOKEN_EXPIRED(HttpStatus.BAD_REQUEST, 1015L,
-            "Password reset failed");
+            "Password reset failed"),
+
+    MANDATORY_FIELD_MISSING(HttpStatus.BAD_REQUEST, 1021L,
+            "Mandatory field is missing."),
+
+    INVALID_STATUS(HttpStatus.BAD_REQUEST, 1022L,
+            "Invalid status value."),
+
+    INVALID_TYPE(HttpStatus.BAD_REQUEST, 1023L,
+            "Invalid type value."),
+
+    INVALID_STORY_POINT(HttpStatus.BAD_REQUEST, 1023L,
+            "Story point must be a valid number."),
+
+    APPLICATION_ALREADY_EXISTS(HttpStatus.CONFLICT, 1024L,
+            "Application already exists."),;
 
     private final HttpStatus httpStatus;
     private final Long errorCode;

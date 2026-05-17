@@ -31,12 +31,17 @@ public class JwtUtils {
         return null;
     }
 
-    public String generateJwtToken(Long userId,String userName, String role, List<String> permissions) {
+    public String generateJwtToken(
+            Long userId,
+            String userName,
+            String role,
+            List<Long> applicationIds
+    ){
         return Jwts.builder()
-                .claim("role",role)
-                .claim("userId",userId)
-                .claim("userName",userName)
-                .claim("permission",permissions)
+                .claim("role", role)
+                .claim("userId", userId)
+                .claim("userName", userName)
+                .claim("applicationIds", applicationIds)
                 .issuedAt(new Date())
                 .expiration(new Date((new Date()).getTime() + jwtExpirationMs))
                 .signWith(key())

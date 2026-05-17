@@ -1,8 +1,10 @@
-package com.bpcl.audit_portal.common.model;
+package com.bpcl.audit_portal.common.dto;
 
-import com.bpcl.audit_portal.common.constants.AppPermission;
 import com.bpcl.audit_portal.common.constants.AppRole;
-import jakarta.validation.constraints.*;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -27,5 +29,5 @@ public class SignUpRequest {
     @NotNull
     private Long assignedToUserId;
 
-    private List<AppPermission> permissions;
+    private List<Long> applicationIds;
 }

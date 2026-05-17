@@ -1,4 +1,4 @@
-package com.bpcl.audit_portal.common.model;
+package com.bpcl.audit_portal.common.dto;
 
 public class LoginResponse {
     private String jwtToken;
