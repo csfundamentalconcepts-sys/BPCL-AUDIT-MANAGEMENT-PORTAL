@@ -1,5 +1,6 @@
 package com.bpcl.audit_portal.common.model;
 
+import com.bpcl.audit_portal.common.constants.VaptAuditStatus;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -10,9 +11,7 @@ import java.time.LocalDateTime;
 @Table(
         name = "vapt_audits",
         uniqueConstraints = {
-                @UniqueConstraint(
-                        columnNames = {"application_id", "audit_year"}
-                )
+                @UniqueConstraint(columnNames = {"vapt_card_id", "audit_year"})
         }
 )
 @Getter
@@ -30,11 +29,16 @@ public class VaptAudit {
     private Integer auditYear;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "application_id", nullable = false)
-    private Application application;
+    @JoinColumn(name = "vapt_card_id", nullable = false)
+    private VaptCard vaptCard;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private String status;
+    private VaptAuditStatus status;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "created_by", nullable = false)
+    private User createdBy;
 
     @CreationTimestamp
     @Column(updatable = false)
