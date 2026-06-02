@@ -175,7 +175,9 @@ public class AuthService {
             LoginRequest loginRequest,
             HttpServletRequest request
     ) {
-
+        log.info("Hi");
+        log.info(loginRequest.getUserName());
+        log.info(loginRequest.getPassword());
         Authentication authentication =
                 authenticationManager.authenticate(
                         new UsernamePasswordAuthenticationToken(
@@ -183,7 +185,7 @@ public class AuthService {
                                 loginRequest.getPassword()
                         )
                 );
-
+        log.info("Hey");
         SecurityContextHolder
                 .getContext()
                 .setAuthentication(authentication);

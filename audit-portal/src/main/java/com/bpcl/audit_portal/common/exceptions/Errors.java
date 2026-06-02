@@ -74,7 +74,30 @@ public enum Errors {
             "Story point must be a valid number."),
 
     APPLICATION_ALREADY_EXISTS(HttpStatus.CONFLICT, 1024L,
-            "Application already exists."),;
+            "Application already exists."),
+    VAPT_CARD_ALREADY_EXISTS(HttpStatus.CONFLICT, 1025L,
+            "VAPT Card already exists for this application."),
+
+    VAPT_CARD_NOT_FOUND(HttpStatus.NOT_FOUND, 1026L,
+            "VAPT Card not found."),
+
+    VAPT_AUDIT_ALREADY_EXISTS(HttpStatus.CONFLICT, 1027L,
+            "VAPT already exists for this year."),
+
+    VAPT_AUDIT_NOT_FOUND(HttpStatus.NOT_FOUND, 1028L,
+            "VAPT Audit not found."),
+
+    VAPT_PHASE_ALREADY_EXISTS(HttpStatus.CONFLICT, 1029L,
+            "Phase already exists for this audit."),
+
+    PREVIOUS_PHASE_NOT_FOUND(HttpStatus.BAD_REQUEST, 1030L,
+            "Previous phase does not exist."),
+
+    PREVIOUS_PHASE_NOT_COMPLETED(HttpStatus.BAD_REQUEST, 1031L,
+            "Previous phase must be completed before creating a new one."),
+
+    VULNERABILITY_NOT_FOUND(HttpStatus.NOT_FOUND, 1032L,
+            "Vulnerability not found.");
 
     private final HttpStatus httpStatus;
     private final Long errorCode;

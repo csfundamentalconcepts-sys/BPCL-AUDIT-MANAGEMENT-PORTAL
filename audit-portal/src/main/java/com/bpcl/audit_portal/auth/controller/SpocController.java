@@ -26,7 +26,7 @@ public class SpocController {
     public ResponseEntity<String> createUser(
             @RequestBody SignUpRequest request,
             @AuthenticationPrincipal UserDetailsImplementation userDetails
-    ) {
+    ){
         authService.registerUser(request, userDetails);
         return ResponseEntity.ok("User created successfully");
     }

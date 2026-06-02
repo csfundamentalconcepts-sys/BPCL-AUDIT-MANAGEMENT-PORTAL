@@ -1,0 +1,122 @@
+package com.bpcl.audit_portal.common.controller;
+
+import com.bpcl.audit_portal.common.dto.*;
+import com.bpcl.audit_portal.common.model.User;
+import com.bpcl.audit_portal.common.model.VaptAudit;
+import com.bpcl.audit_portal.common.model.VaptCard;
+import com.bpcl.audit_portal.common.service.VaptService;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/vapt")
+public class VaptController {
+
+    private final VaptService vaptService;
+
+    public VaptController(VaptService vaptService) {
+        this.vaptService = vaptService;
+    }
+
+    @PostMapping("/card")
+    public ResponseEntity<VaptCardResponse> createCard(
+            @RequestBody CreateVaptCardRequest request,
+            @AuthenticationPrincipal User currentUser) {
+
+        VaptCard card = vaptService.createVaptCard(
+                request.getApplicationId(),
+                currentUser
+        );
+
+        return ResponseEntity.ok(
+                VaptCardResponse.builder()
+                .id(card.getId())
+                .applicationId(card.getApplication().getId())
+                .auditInfo(
+                        AuditInfoResponse.builder()
+                                .userId(card.getCreatedBy().getId())
+                                .username(card.getCreatedBy().getUserName())
+                                .createdAt(card.getCreatedAt())
+                                .build()
+                )
+                .build()
+        );
+    }
+
+    @PostMapping("/audit")
+    public ResponseEntity<VaptAuditResponse> createAudit(
+            @RequestBody CreateVaptAuditRequest request,
+            @AuthenticationPrincipal User currentUser) {
+
+        VaptAudit audit = vaptService.createVaptAudit(
+                request.getCardId(),
+                request.getAuditYear(),
+                currentUser
+        );
+
+        return ResponseEntity.ok(
+                VaptAuditResponse.builder()
+                        .id(audit.getId())
+                        .cardId(audit.getVaptCard().getId())
+                        .auditYear(audit.getAuditYear())
+                        .status(audit.getStatus())
+                        .auditInfo(
+                                AuditInfoResponse.builder()
+                                        .userId(audit.getCreatedBy().getId())
+                                        .username(audit.getCreatedBy().getUserName())
+                                        .createdAt(audit.getCreatedAt())
+                                        .build()
+                        )
+                        .build()
+        );
+    }
+    @GetMapping("/card/application/{applicationId}")
+    public ResponseEntity<VaptCardResponse> getCardByApplicationId(
+            @PathVariable Long applicationId) {
+
+        VaptCard card = vaptService.getVaptCardByApplicationId(applicationId);
+
+        return ResponseEntity.ok(
+                VaptCardResponse.builder()
+                        .id(card.getId())
+                        .applicationId(card.getApplication().getId())
+                        .auditInfo(
+                                AuditInfoResponse.builder()
+                                        .userId(card.getCreatedBy().getId())
+                                        .username(card.getCreatedBy().getUserName())
+                                        .createdAt(card.getCreatedAt())
+                                        .build()
+                        )
+                        .build()
+        );
+    }
+    @GetMapping("/card/{cardId}/audits")
+    public ResponseEntity<List<VaptAuditResponse>> getAuditsByCardId(
+            @PathVariable Long cardId) {
+
+        List<VaptAudit> audits = vaptService.getAuditsByCardId(cardId);
+
+        return ResponseEntity.ok(
+                audits.stream()
+                        .map(audit -> VaptAuditResponse.builder()
+                                .id(audit.getId())
+                                .cardId(audit.getVaptCard().getId())
+                                .auditYear(audit.getAuditYear())
+                                .status(audit.getStatus())
+                                .auditInfo(
+                                        AuditInfoResponse.builder()
+                                                .userId(audit.getCreatedBy().getId())
+                                                .username(audit.getCreatedBy().getUserName())
+                                                .createdAt(audit.getCreatedAt())
+                                                .build()
+                                )
+                                .build()
+                        )
+                        .toList()
+        );
+    }
+
+}

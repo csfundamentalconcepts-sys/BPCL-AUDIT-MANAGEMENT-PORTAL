@@ -1,17 +1,17 @@
 package com.bpcl.audit_portal.common.model;
 
-import com.bpcl.audit_portal.common.constants.VaptPhaseStatus;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
 
 @Entity
 @Table(
-        name = "vapt_audit_phases",
+        name = "vapt_cards",
         uniqueConstraints = {
-                @UniqueConstraint(columnNames = {"vapt_audit_id", "phase_number"})
+                @UniqueConstraint(columnNames = {"application_id"})
         }
 )
 @Getter
@@ -19,22 +19,15 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class VaptAuditPhase {
+public class VaptCard {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "phase_number", nullable = false)
-    private Integer phaseNumber;
-
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private VaptPhaseStatus status;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "vapt_audit_id", nullable = false)
-    private VaptAudit vaptAudit;
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "application_id", nullable = false)
+    private Application application;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by", nullable = false)
@@ -43,4 +36,5 @@ public class VaptAuditPhase {
     @CreationTimestamp
     @Column(updatable = false)
     private LocalDateTime createdAt;
+
 }
