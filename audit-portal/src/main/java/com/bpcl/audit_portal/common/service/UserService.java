@@ -1,7 +1,9 @@
 package com.bpcl.audit_portal.common.service;
 import com.bpcl.audit_portal.common.constants.AppRole;
+import com.bpcl.audit_portal.common.dto.UserDto;
 import com.bpcl.audit_portal.common.exceptions.BAMPException;
 import com.bpcl.audit_portal.common.exceptions.Errors;
+import com.bpcl.audit_portal.common.mapper.UserDtoMapper;
 import com.bpcl.audit_portal.common.model.Role;
 import com.bpcl.audit_portal.common.model.User;
 import com.bpcl.audit_portal.common.repository.RoleRepository;
@@ -17,10 +19,12 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
+    private final UserDtoMapper userDtoMapper;
     private static final Logger log = LoggerFactory.getLogger(UserService.class);
-    public UserService(UserRepository userRepository, RoleRepository roleRepository) {
+    public UserService(UserRepository userRepository, RoleRepository roleRepository, UserDtoMapper userDtoMapper) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
+        this.userDtoMapper = userDtoMapper;
     }
 
     public List<User> getAllUsers() {
@@ -45,6 +49,14 @@ public class UserService {
             log.error("Invalid role provided while updating user role. userId={}, roleName={}", userId, roleName, e);
             throw new BAMPException(Errors.ROLE_NOT_FOUND);
         }
+    }
+    
+    @Transactional(readOnly = true)
+    public UserDto getCurrentUser(Long userId) {
+
+        User user = findById(userId);
+
+        return userDtoMapper.toDto(user);
     }
 
     public User findById(Long id){

@@ -56,7 +56,7 @@ public class AuthController {
                 .secure(false)
                 .path("/api/auth")
                 .maxAge(Duration.ofDays(7))
-                .sameSite("None")
+                .sameSite("Lax")
                 .build();
 
         return ResponseEntity.ok()
@@ -84,7 +84,7 @@ public class AuthController {
                 .secure(false)
                 .path("/api/auth")
                 .maxAge(Duration.ofDays(7))
-                .sameSite("None")
+                .sameSite("Lax")
                 .build();
 
         return ResponseEntity.ok()
@@ -125,7 +125,7 @@ public class AuthController {
                 .secure(false)
                 .path("/api/auth")
                 .maxAge(0)
-                .sameSite("None")
+                .sameSite("Lax")
                 .build();
 
         return ResponseEntity.ok()
@@ -134,10 +134,12 @@ public class AuthController {
     }
 
     @GetMapping("/user")
-    public ResponseEntity<?> userDetails(@AuthenticationPrincipal UserDetailsImplementation userDetails){
-        User user = userService.findById(userDetails.getId());
-        UserDto response = userDtoMapper.toDto(user);
-        return ResponseEntity.ok().body(response);
+    public ResponseEntity<?> userDetails(
+            @AuthenticationPrincipal UserDetailsImplementation userDetails) {
+
+        return ResponseEntity.ok(
+                userService.getCurrentUser(userDetails.getId())
+        );
     }
 }
 
