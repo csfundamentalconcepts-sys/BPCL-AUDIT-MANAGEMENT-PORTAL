@@ -15,6 +15,8 @@ public class UserDto {
 
     private String userName;
 
+    private String fullName;
+
     private String role;
 
     private List<Long> applicationIds;

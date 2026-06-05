@@ -10,7 +10,7 @@ public class Util {
 
         switch (creatorRole) {
             case ADMIN -> {
-                if (targetRole != AppRole.HEAD) {
+                if (targetRole != AppRole.HEAD && targetRole != AppRole.ADMIN) {
                     throw new BAMPException(Errors.UNAUTHORIZED);
                 }
             }
