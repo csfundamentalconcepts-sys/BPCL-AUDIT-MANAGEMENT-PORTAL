@@ -18,6 +18,7 @@ public class UserDtoMapper {
         dto.setId(user.getId());
 
         dto.setUserName(user.getUserName());
+        dto.setFullName(user.getFullName());
 
         if (user.getRole() != null) {
             dto.setRole(user.getRole().getRoleName().name());

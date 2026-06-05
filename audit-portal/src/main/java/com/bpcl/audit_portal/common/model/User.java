@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -35,6 +36,10 @@ public class User {
     @Size(max = 150)
     @Column(name = "user_name", nullable = false)
     private String userName;
+
+    @NotNull
+    @Size(max = 100)
+    private String fullName;
 
     @NotBlank
     @Size(max = 255)

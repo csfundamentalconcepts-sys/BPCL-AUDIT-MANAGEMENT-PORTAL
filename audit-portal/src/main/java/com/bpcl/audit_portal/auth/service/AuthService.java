@@ -100,7 +100,7 @@ public class AuthService {
         );
 
         if (userRepository.existsByUserName(
-                signUpRequest.getUsername()
+                signUpRequest.getUserName()
         )) {
             throw new BAMPException(
                     Errors.USERNAME_ALREADY_IN_USE
@@ -155,7 +155,7 @@ public class AuthService {
         }
 
         User user = User.builder()
-                .userName(signUpRequest.getUsername())
+                .userName(signUpRequest.getUserName())
                 .password(passwordEncoder.encode(
                         signUpRequest.getPassword()
                 ))
