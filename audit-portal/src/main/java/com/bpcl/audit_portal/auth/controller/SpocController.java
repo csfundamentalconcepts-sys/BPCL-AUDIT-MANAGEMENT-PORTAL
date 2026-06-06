@@ -3,6 +3,7 @@ package com.bpcl.audit_portal.auth.controller;
 import com.bpcl.audit_portal.auth.model.UserDetailsImplementation;
 import com.bpcl.audit_portal.auth.service.AuthService;
 import com.bpcl.audit_portal.common.dto.SignUpRequest;
+import com.bpcl.audit_portal.common.dto.UserDto;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -23,11 +24,11 @@ public class SpocController {
 
     @PostMapping("/create-user")
     @PreAuthorize("hasRole('SPOC')")
-    public ResponseEntity<String> createUser(
+    public ResponseEntity<?> createUser(
             @RequestBody SignUpRequest request,
             @AuthenticationPrincipal UserDetailsImplementation userDetails
     ){
-        authService.registerUser(request, userDetails);
-        return ResponseEntity.ok("User created successfully");
+        UserDto response = authService.registerUser(request, userDetails);
+        return ResponseEntity.ok(response);
     }
 }

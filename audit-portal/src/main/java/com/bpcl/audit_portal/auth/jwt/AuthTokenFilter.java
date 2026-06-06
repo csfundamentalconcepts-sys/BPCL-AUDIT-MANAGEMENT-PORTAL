@@ -107,7 +107,7 @@ public class AuthTokenFilter extends OncePerRequestFilter {
             logger.warn("JWT expired for path: {}", request.getRequestURI());
         } catch (MalformedJwtException e) {
             logger.error("Invalid JWT format for path: {}", request.getRequestURI());
-        } catch (JwtException e) {   // Catch other JWT related exceptions
+        } catch (JwtException e) {
             logger.error("JWT processing error for path: {}", request.getRequestURI(), e);
         } catch (Exception e) {
             logger.error("Unexpected error in AuthTokenFilter for path: {}", request.getRequestURI(), e);

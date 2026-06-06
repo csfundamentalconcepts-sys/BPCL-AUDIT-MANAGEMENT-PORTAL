@@ -7,12 +7,10 @@ import com.bpcl.audit_portal.auth.model.UserDetailsImplementation;
 import com.bpcl.audit_portal.auth.repository.PasswordResetTokenRepository;
 import com.bpcl.audit_portal.auth.repository.RefreshTokenRepository;
 import com.bpcl.audit_portal.common.constants.AppRole;
-import com.bpcl.audit_portal.common.dto.AuthResponse;
-import com.bpcl.audit_portal.common.dto.LoginRequest;
-import com.bpcl.audit_portal.common.dto.LoginResponse;
-import com.bpcl.audit_portal.common.dto.SignUpRequest;
+import com.bpcl.audit_portal.common.dto.*;
 import com.bpcl.audit_portal.common.exceptions.BAMPException;
 import com.bpcl.audit_portal.common.exceptions.Errors;
+import com.bpcl.audit_portal.common.mapper.UserDtoMapper;
 import com.bpcl.audit_portal.common.model.Application;
 import com.bpcl.audit_portal.common.model.Role;
 import com.bpcl.audit_portal.common.model.User;
@@ -55,6 +53,7 @@ public class AuthService {
     private final JwtUtils jwtUtils;
     private final RefreshTokenRepository refreshTokenRepository;
     private final PasswordResetTokenRepository passwordResetTokenRepository;
+    private final UserDtoMapper userDtoMapper;
 
     private static final Logger log =
             LoggerFactory.getLogger(AuthService.class);
@@ -68,7 +67,8 @@ public class AuthService {
             JwtUtils jwtUtils,
             RefreshTokenRepository refreshTokenRepository,
             ApplicationRepository applicationRepository,
-            PasswordResetTokenRepository passwordResetTokenRepository
+            PasswordResetTokenRepository passwordResetTokenRepository,
+            UserDtoMapper userDtoMapper
     ) {
         this.refreshTokenService = refreshTokenService;
         this.userRepository = userRepository;
@@ -79,9 +79,11 @@ public class AuthService {
         this.refreshTokenRepository = refreshTokenRepository;
         this.applicationRepository = applicationRepository;
         this.passwordResetTokenRepository = passwordResetTokenRepository;
+        this.userDtoMapper = userDtoMapper;
     }
 
-    public void registerUser(
+    @Transactional
+    public UserDto registerUser(
             SignUpRequest signUpRequest,
             UserDetailsImplementation userDetails
     ) {
@@ -156,6 +158,7 @@ public class AuthService {
 
         User user = User.builder()
                 .userName(signUpRequest.getUserName())
+                .fullName(signUpRequest.getFullName())
                 .password(passwordEncoder.encode(
                         signUpRequest.getPassword()
                 ))
@@ -168,6 +171,7 @@ public class AuthService {
                 .build();
 
         userRepository.save(user);
+        return userDtoMapper.toDto(user);
     }
 
     @Transactional
