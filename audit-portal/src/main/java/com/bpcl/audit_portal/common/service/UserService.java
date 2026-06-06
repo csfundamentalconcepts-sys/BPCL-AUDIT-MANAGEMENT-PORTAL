@@ -66,4 +66,13 @@ public class UserService {
     public List<Role> getAllRoles() {
         return roleRepository.findAll();
     }
+
+    @Transactional(readOnly = true)
+    public List<UserDto> getAssignedUsers(Long userId) {
+
+        return userRepository.findByAssignedToId(userId)
+                .stream()
+                .map(userDtoMapper::toDto)
+                .toList();
+    }
 }

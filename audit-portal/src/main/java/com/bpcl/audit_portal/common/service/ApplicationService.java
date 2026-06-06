@@ -1,5 +1,6 @@
 package com.bpcl.audit_portal.common.service;
 
+import com.bpcl.audit_portal.common.constants.AppRole;
 import com.bpcl.audit_portal.common.dto.ApplicationResponse;
 import com.bpcl.audit_portal.common.dto.CreateApplicationRequest;
 import com.bpcl.audit_portal.common.exceptions.BAMPException;
@@ -53,15 +54,33 @@ public class ApplicationService {
                 .createdBy(currentUser)
                 .build();
 
-        Application savedApplication =
-                applicationRepository.save(application);
+        Application savedApplication = applicationRepository.save(application);
 
+        AppRole role = currentUser.getRole().getRoleName();
+
+        List<User> admins =
+                userRepository.findByRole_RoleName(AppRole.ADMIN);
+
+        switch (role) {
+
+            case HEAD -> {
+                currentUser.getApplications().add(savedApplication);
+            }
+            case SPOC -> {
+                User assignedHead = currentUser.getAssignedTo();
+                if (assignedHead != null) {
+                    assignedHead.getApplications().add(savedApplication);
+                }
+            }
+        }
+        admins.forEach(admin ->
+                admin.getApplications().add(savedApplication)
+        );
         return ApplicationMapper.toDto(savedApplication);
     }
+    public List<ApplicationResponse> getAllAssignedApplications(Long userId) {
 
-    public List<ApplicationResponse> getAllApplications() {
-
-        return applicationRepository.findAll()
+        return applicationRepository.findApplicationsByUserId(userId)
                 .stream()
                 .map(ApplicationMapper::toDto)
                 .toList();

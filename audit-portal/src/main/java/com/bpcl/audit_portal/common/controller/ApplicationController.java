@@ -23,7 +23,7 @@ public class ApplicationController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('SPOC','HEAD')")
+    @PreAuthorize("hasAnyRole('SPOC','HEAD','ADMIN')")
     public ApplicationResponse createApplication(
             @RequestBody CreateApplicationRequest request,
             @AuthenticationPrincipal UserDetailsImplementation userDetails
@@ -35,9 +35,12 @@ public class ApplicationController {
         );
     }
 
-    @GetMapping
-    public List<ApplicationResponse> getAllApplications() {
-
-        return applicationService.getAllApplications();
+    @GetMapping("/assigned")
+    public List<ApplicationResponse> getAllAssignedApplications(
+            @AuthenticationPrincipal UserDetailsImplementation userDetails
+    ) {
+        return applicationService.getAllAssignedApplications(
+                userDetails.getId()
+        );
     }
 }

@@ -139,5 +139,6 @@ public class AuthController {
                 userService.getCurrentUser(userDetails.getId())
         );
     }
+
 }
 
