@@ -1,5 +1,6 @@
 package com.bpcl.audit_portal.common.controller;
 
+import com.bpcl.audit_portal.auth.model.UserDetailsImplementation;
 import com.bpcl.audit_portal.common.dto.*;
 import com.bpcl.audit_portal.common.model.User;
 import com.bpcl.audit_portal.common.model.VaptAudit;
@@ -24,11 +25,11 @@ public class VaptController {
     @PostMapping("/card")
     public ResponseEntity<VaptCardResponse> createCard(
             @RequestBody CreateVaptCardRequest request,
-            @AuthenticationPrincipal User currentUser) {
+            @AuthenticationPrincipal UserDetailsImplementation currentUser) {
 
         VaptCard card = vaptService.createVaptCard(
                 request.getApplicationId(),
-                currentUser
+                currentUser.getId()
         );
 
         return ResponseEntity.ok(
@@ -49,12 +50,12 @@ public class VaptController {
     @PostMapping("/audit")
     public ResponseEntity<VaptAuditResponse> createAudit(
             @RequestBody CreateVaptAuditRequest request,
-            @AuthenticationPrincipal User currentUser) {
+            @AuthenticationPrincipal UserDetailsImplementation currentUser) {
 
         VaptAudit audit = vaptService.createVaptAudit(
                 request.getCardId(),
                 request.getAuditYear(),
-                currentUser
+                currentUser.getId()
         );
 
         return ResponseEntity.ok(
