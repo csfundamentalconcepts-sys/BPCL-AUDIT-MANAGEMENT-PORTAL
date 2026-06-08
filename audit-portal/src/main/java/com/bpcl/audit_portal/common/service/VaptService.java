@@ -1,5 +1,8 @@
 package com.bpcl.audit_portal.common.service;
 import com.bpcl.audit_portal.common.constants.VaptAuditStatus;
+import com.bpcl.audit_portal.common.dto.AuditInfoResponse;
+import com.bpcl.audit_portal.common.dto.VaptAuditResponse;
+import com.bpcl.audit_portal.common.dto.VaptCardResponse;
 import com.bpcl.audit_portal.common.exceptions.BAMPException;
 import com.bpcl.audit_portal.common.exceptions.Errors;
 import com.bpcl.audit_portal.common.model.Application;
@@ -72,19 +75,47 @@ public class VaptService {
         return vaptAuditRepository.save(audit);
     }
     @Transactional(readOnly = true)
-    public VaptCard getVaptCardByApplicationId(Long applicationId) {
+    public VaptCardResponse getVaptCardByApplicationId(Long applicationId) {
 
-        return vaptCardRepository.findByApplicationId(applicationId)
+        VaptCard card = vaptCardRepository.findByApplicationId(applicationId)
                 .orElseThrow(() -> new BAMPException(Errors.VAPT_CARD_NOT_FOUND));
+
+        return VaptCardResponse.builder()
+                .id(card.getId())
+                .applicationId(card.getApplication().getId())
+                .auditInfo(
+                        AuditInfoResponse.builder()
+                                .userId(card.getCreatedBy().getId())
+                                .username(card.getCreatedBy().getUserName())
+                                .createdAt(card.getCreatedAt())
+                                .build()
+                )
+                .build();
     }
     @Transactional(readOnly = true)
-    public List<VaptAudit> getAuditsByCardId(Long cardId) {
+    public List<VaptAuditResponse> getAuditsByCardId(Long cardId) {
 
         if (!vaptCardRepository.existsById(cardId)) {
             throw new BAMPException(Errors.VAPT_CARD_NOT_FOUND);
         }
 
-        return vaptAuditRepository.findByVaptCardIdOrderByAuditYearDesc(cardId);
+        List<VaptAudit> vaptAudits = vaptAuditRepository.findByVaptCardIdOrderByAuditYearDesc(cardId);
+        return vaptAudits.stream()
+                .map(audit -> VaptAuditResponse.builder()
+                        .id(audit.getId())
+                        .cardId(audit.getVaptCard().getId())
+                        .auditYear(audit.getAuditYear())
+                        .status(audit.getStatus())
+                        .auditInfo(
+                                AuditInfoResponse.builder()
+                                        .userId(audit.getCreatedBy().getId())
+                                        .username(audit.getCreatedBy().getUserName())
+                                        .createdAt(audit.getCreatedAt())
+                                        .build()
+                        )
+                        .build()
+                )
+                .toList();
     }
 
 }
