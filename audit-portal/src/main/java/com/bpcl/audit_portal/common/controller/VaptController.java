@@ -74,49 +74,24 @@ public class VaptController {
                         .build()
         );
     }
-    @GetMapping("/card/application/{applicationId}")
-    public ResponseEntity<VaptCardResponse> getCardByApplicationId(
-            @PathVariable Long applicationId) {
-
-        VaptCard card = vaptService.getVaptCardByApplicationId(applicationId);
-
-        return ResponseEntity.ok(
-                VaptCardResponse.builder()
-                        .id(card.getId())
-                        .applicationId(card.getApplication().getId())
-                        .auditInfo(
-                                AuditInfoResponse.builder()
-                                        .userId(card.getCreatedBy().getId())
-                                        .username(card.getCreatedBy().getUserName())
-                                        .createdAt(card.getCreatedAt())
-                                        .build()
-                        )
-                        .build()
-        );
-    }
     @GetMapping("/card/{cardId}/audits")
     public ResponseEntity<List<VaptAuditResponse>> getAuditsByCardId(
             @PathVariable Long cardId) {
 
-        List<VaptAudit> audits = vaptService.getAuditsByCardId(cardId);
+        List<VaptAuditResponse> audits = vaptService.getAuditsByCardId(cardId);
 
         return ResponseEntity.ok(
-                audits.stream()
-                        .map(audit -> VaptAuditResponse.builder()
-                                .id(audit.getId())
-                                .cardId(audit.getVaptCard().getId())
-                                .auditYear(audit.getAuditYear())
-                                .status(audit.getStatus())
-                                .auditInfo(
-                                        AuditInfoResponse.builder()
-                                                .userId(audit.getCreatedBy().getId())
-                                                .username(audit.getCreatedBy().getUserName())
-                                                .createdAt(audit.getCreatedAt())
-                                                .build()
-                                )
-                                .build()
-                        )
-                        .toList()
+                audits
+        );
+    }
+    @GetMapping("/card/application/{applicationId}")
+    public ResponseEntity<VaptCardResponse> getCardByApplicationId(
+            @PathVariable Long applicationId) {
+
+        VaptCardResponse vaptCardResponse = vaptService.getVaptCardByApplicationId(applicationId);
+
+        return ResponseEntity.ok(
+                vaptCardResponse
         );
     }
 
