@@ -7,6 +7,7 @@ import com.bpcl.audit_portal.common.model.User;
 import com.bpcl.audit_portal.common.model.VaptAudit;
 import com.bpcl.audit_portal.common.model.VaptCard;
 import com.bpcl.audit_portal.common.repository.ApplicationRepository;
+import com.bpcl.audit_portal.common.repository.UserRepository;
 import com.bpcl.audit_portal.common.repository.VaptAuditRepository;
 import com.bpcl.audit_portal.common.repository.VaptCardRepository;
 import org.springframework.stereotype.Service;
@@ -20,15 +21,17 @@ public class VaptService {
     private final VaptCardRepository vaptCardRepository;
     private final ApplicationRepository applicationRepository;
     private final VaptAuditRepository vaptAuditRepository;
+    private final UserRepository userRepository;
 
-    public VaptService(VaptCardRepository vaptCardRepository, ApplicationRepository applicationRepository, VaptAuditRepository vaptAuditRepository) {
+    public VaptService(VaptCardRepository vaptCardRepository, ApplicationRepository applicationRepository, VaptAuditRepository vaptAuditRepository, UserRepository userRepository) {
         this.vaptCardRepository = vaptCardRepository;
         this.applicationRepository = applicationRepository;
         this.vaptAuditRepository = vaptAuditRepository;
+        this.userRepository = userRepository;
     }
 
     @Transactional
-    public VaptCard createVaptCard(Long applicationId, User currentUser) {
+    public VaptCard createVaptCard(Long applicationId, Long userId) {
 
         if (vaptCardRepository.existsByApplicationId(applicationId)) {
             throw new BAMPException(Errors.VAPT_CARD_ALREADY_EXISTS);
@@ -36,6 +39,8 @@ public class VaptService {
 
         Application application = applicationRepository.findById(applicationId)
                 .orElseThrow(() -> new BAMPException(Errors.APPLICATION_NOT_FOUND));
+
+        User currentUser = userRepository.findById(userId).orElseThrow(()-> new BAMPException(Errors.USER_NOT_FOUND));
 
         VaptCard card = VaptCard.builder()
                 .application(application)
@@ -45,7 +50,8 @@ public class VaptService {
         return vaptCardRepository.save(card);
     }
     @Transactional
-    public VaptAudit createVaptAudit(Long cardId, Integer auditYear, User currentUser){
+    public VaptAudit createVaptAudit(Long cardId, Integer auditYear, Long userId){
+
 
         if (vaptAuditRepository.existsByVaptCardIdAndAuditYear(cardId, auditYear)) {
             throw new BAMPException(Errors.VAPT_AUDIT_ALREADY_EXISTS);
@@ -53,6 +59,8 @@ public class VaptService {
 
         VaptCard card = vaptCardRepository.findById(cardId)
                 .orElseThrow(() -> new BAMPException(Errors.VAPT_CARD_NOT_FOUND));
+
+        User currentUser = userRepository.findById(userId).orElseThrow(()-> new BAMPException(Errors.USER_NOT_FOUND));
 
         VaptAudit audit = VaptAudit.builder()
                 .vaptCard(card)
