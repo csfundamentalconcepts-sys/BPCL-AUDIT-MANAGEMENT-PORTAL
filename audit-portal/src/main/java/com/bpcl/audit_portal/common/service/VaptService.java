@@ -1,22 +1,24 @@
 package com.bpcl.audit_portal.common.service;
 import com.bpcl.audit_portal.common.constants.VaptAuditStatus;
+import com.bpcl.audit_portal.common.constants.VaptPhaseStatus;
 import com.bpcl.audit_portal.common.dto.AuditInfoResponse;
 import com.bpcl.audit_portal.common.dto.VaptAuditResponse;
 import com.bpcl.audit_portal.common.dto.VaptCardResponse;
 import com.bpcl.audit_portal.common.exceptions.BAMPException;
 import com.bpcl.audit_portal.common.exceptions.Errors;
-import com.bpcl.audit_portal.common.model.Application;
-import com.bpcl.audit_portal.common.model.User;
-import com.bpcl.audit_portal.common.model.VaptAudit;
-import com.bpcl.audit_portal.common.model.VaptCard;
-import com.bpcl.audit_portal.common.repository.ApplicationRepository;
-import com.bpcl.audit_portal.common.repository.UserRepository;
-import com.bpcl.audit_portal.common.repository.VaptAuditRepository;
-import com.bpcl.audit_portal.common.repository.VaptCardRepository;
+import com.bpcl.audit_portal.common.model.*;
+import com.bpcl.audit_portal.common.repository.*;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.reactive.function.BodyInserters;
+import org.springframework.web.reactive.function.client.WebClient;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class VaptService {
@@ -25,12 +27,25 @@ public class VaptService {
     private final ApplicationRepository applicationRepository;
     private final VaptAuditRepository vaptAuditRepository;
     private final UserRepository userRepository;
+    private final VaptAuditPhaseRepository vaptAuditPhaseRepository;
+    private final WebClient webClient;
+    private final VulnerabilityRepository vulnerabilityRepository;
 
-    public VaptService(VaptCardRepository vaptCardRepository, ApplicationRepository applicationRepository, VaptAuditRepository vaptAuditRepository, UserRepository userRepository) {
+    public VaptService(
+            VaptCardRepository vaptCardRepository,
+            ApplicationRepository applicationRepository,
+            VaptAuditRepository vaptAuditRepository, UserRepository userRepository,
+            VaptAuditPhaseRepository vaptAuditPhaseRepository,
+            VulnerabilityRepository vulnerabilityRepository,
+            WebClient webClient) {
+
         this.vaptCardRepository = vaptCardRepository;
         this.applicationRepository = applicationRepository;
         this.vaptAuditRepository = vaptAuditRepository;
         this.userRepository = userRepository;
+        this.vaptAuditPhaseRepository = vaptAuditPhaseRepository;
+        this.vulnerabilityRepository = vulnerabilityRepository;
+        this.webClient = webClient;
     }
 
     @Transactional
@@ -52,6 +67,7 @@ public class VaptService {
 
         return vaptCardRepository.save(card);
     }
+
     @Transactional
     public VaptAudit createVaptAudit(Long cardId, Integer auditYear, Long userId){
 
@@ -74,6 +90,7 @@ public class VaptService {
 
         return vaptAuditRepository.save(audit);
     }
+
     @Transactional(readOnly = true)
     public VaptCardResponse getVaptCardByApplicationId(Long applicationId) {
 
@@ -92,6 +109,7 @@ public class VaptService {
                 )
                 .build();
     }
+
     @Transactional(readOnly = true)
     public List<VaptAuditResponse> getAuditsByCardId(Long cardId) {
 
@@ -118,4 +136,74 @@ public class VaptService {
                 .toList();
     }
 
+    @Transactional
+    public VaptAuditPhase createNextPhase(
+            Long auditId,
+            MultipartFile file,
+            String password,
+            User currentUser) {
+        VaptAudit audit = vaptAuditRepository.findById(auditId).orElseThrow(() -> new BAMPException(Errors.VAPT_AUDIT_NOT_FOUND));
+        VaptAuditPhase lastPhase = vaptAuditPhaseRepository.findTopByVaptAudit_IdOrderByPhaseNumberDesc(auditId).orElse(null);
+        if (lastPhase != null && lastPhase.getStatus() != VaptPhaseStatus.CLOSED) {
+            throw new BAMPException(Errors.PREVIOUS_PHASE_NOT_COMPLETED);
+        }
+        Integer nextPhase =
+                (lastPhase == null)
+                        ? 1
+                        : lastPhase.getPhaseNumber() + 1;
+        VaptAuditPhase phase = VaptAuditPhase.builder()
+                .phaseNumber(nextPhase)
+                .status(VaptPhaseStatus.OPEN)
+                .vaptAudit(audit)
+                .createdBy(currentUser)
+                .build();
+        phase = vaptAuditPhaseRepository.save(phase);
+        List<Map<String, Object>> response = webClient.post()
+                .uri("/parse-pdf")
+                .contentType(MediaType.MULTIPART_FORM_DATA)
+                .body(
+                        BodyInserters.fromMultipartData(
+                                "file",
+                                file.getResource()
+                        ).with("password", password)
+                )
+                .retrieve()
+                .bodyToMono(
+                        new ParameterizedTypeReference<List<Map<String, Object>>>() {}
+                )
+                .block();
+        List<Vulnerability> vulnerabilities = new ArrayList<>();
+        if (response != null) {
+            for (Map<String, Object> v : response) {
+                Vulnerability vuln = new Vulnerability();
+                vuln.setVulnerabilityId((String) v.get("Vulnerability ID"));
+                vuln.setAffectedAsset((String) v.get("Affected Asset"));
+                vuln.setName((String) v.get("Nameof the Vulnerability"));
+                vuln.setDetailedObservation((String) v.get("Detailed observation"));
+                vuln.setCveCwe((String) v.get("CVE/CWE"));
+                vuln.setCvss((String) v.get("CVSS"));
+                vuln.setEpss((String) v.get("EPSS"));
+                vuln.setSeverity((String) v.get("Severity"));
+                vuln.setStatus((String) v.get("Status"));
+                vuln.setRecommendation((String) v.get("Recommendation"));
+                vuln.setReference((String) v.get("Reference"));
+                vuln.setNewOrRepeat((String) v.get("New or repeat"));
+                vuln.setVaptAuditPhase(phase);
+                List<String> points = (List<String>) v.get("Vulnerability Point");
+                List<VulnerabilityPoint> pointEntities = new ArrayList<>();
+                if (points != null) {
+                    for (String point : points) {
+                        VulnerabilityPoint vp = new VulnerabilityPoint();
+                        vp.setValue(point);
+                        vp.setVulnerability(vuln);
+                        pointEntities.add(vp);
+                    }
+                }
+                vuln.setVulnerabilityPoints(pointEntities);
+                vulnerabilities.add(vuln);
+            }
+        }
+        vulnerabilityRepository.saveAll(vulnerabilities);
+        return phase;
+    }
 }

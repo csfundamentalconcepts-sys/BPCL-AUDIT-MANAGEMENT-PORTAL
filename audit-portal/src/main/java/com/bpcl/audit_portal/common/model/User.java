@@ -65,10 +65,13 @@ public class User {
     @JsonIgnore
     private User createdBy;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "assigned_to")
-    @JsonIgnore
-    private User assignedTo;
+    @ManyToMany
+    @JoinTable(
+            name = "user_assignments",
+            joinColumns = @JoinColumn(name = "user_id"),
+            inverseJoinColumns = @JoinColumn(name = "assigned_to_user_id")
+    )
+    private List<User> assignedToUsers = new ArrayList<>();
 
     @Builder.Default
     @Column(name = "log_out")
@@ -76,7 +79,7 @@ public class User {
 
     @Builder.Default
     @Column(name = "is_active")
-    private Boolean isActive = false;
+    private Boolean isActive = true;
 
     @CreationTimestamp
     @Column(updatable = false)

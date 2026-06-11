@@ -4,11 +4,14 @@ import com.bpcl.audit_portal.auth.model.UserDetailsImplementation;
 import com.bpcl.audit_portal.common.dto.*;
 import com.bpcl.audit_portal.common.model.User;
 import com.bpcl.audit_portal.common.model.VaptAudit;
+import com.bpcl.audit_portal.common.model.VaptAuditPhase;
 import com.bpcl.audit_portal.common.model.VaptCard;
 import com.bpcl.audit_portal.common.service.VaptService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+import com.bpcl.audit_portal.common.dto.VaptAuditResponse;
 
 import java.util.List;
 
@@ -94,5 +97,16 @@ public class VaptController {
                 vaptCardResponse
         );
     }
+    @PostMapping("/audit/{auditId}/phase")
+    public ResponseEntity<VaptAuditPhase> createPhase(
+            @PathVariable Long auditId,
+            @RequestParam("file") MultipartFile file,
+            @RequestParam("password") String password,
+            @AuthenticationPrincipal User currentUser
+    ) {
 
+        return ResponseEntity.ok(
+                vaptService.createNextPhase(auditId, file, password, currentUser)
+        );
+    }
 }
