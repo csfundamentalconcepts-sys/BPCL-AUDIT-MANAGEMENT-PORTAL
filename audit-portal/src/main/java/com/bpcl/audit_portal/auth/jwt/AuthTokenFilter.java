@@ -70,6 +70,12 @@ public class AuthTokenFilter extends OncePerRequestFilter {
                     return;
                 }
 
+                if (Boolean.FALSE.equals(user.getLogout())) {
+                    logger.warn("User is already logged out.: {}", username);
+                    filterChain.doFilter(request, response);
+                    return;
+                }
+
                 List<GrantedAuthority> authorities = new ArrayList<>();
 
                 if (applicationIds != null) {

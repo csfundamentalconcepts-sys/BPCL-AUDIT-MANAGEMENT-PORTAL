@@ -57,25 +57,12 @@ public class ApplicationService {
         Application savedApplication = applicationRepository.save(application);
 
         AppRole role = currentUser.getRole().getRoleName();
-
-        List<User> admins =
-                userRepository.findByRole_RoleName(AppRole.ADMIN);
-
-        switch (role) {
-
-            case HEAD -> {
-                currentUser.getApplications().add(savedApplication);
-            }
-            case SPOC -> {
-                User assignedHead = currentUser.getAssignedTo();
-                if (assignedHead != null) {
-                    assignedHead.getApplications().add(savedApplication);
-                }
+        List<User> heads = currentUser.getAssignedToUsers();
+        if (heads != null && !heads.isEmpty()) {
+            for (User head : heads) {
+                head.getApplications().add(savedApplication);
             }
         }
-        admins.forEach(admin ->
-                admin.getApplications().add(savedApplication)
-        );
         return ApplicationMapper.toDto(savedApplication);
     }
     public List<ApplicationResponse> getAllAssignedApplications(Long userId) {

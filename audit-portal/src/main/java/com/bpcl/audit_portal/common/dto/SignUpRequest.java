@@ -30,8 +30,5 @@ public class SignUpRequest {
     @NotNull
     private AppRole role;
 
-    @NotNull
-    private Long assignedToUserId;
-
     private List<Long> applicationIds;
 }

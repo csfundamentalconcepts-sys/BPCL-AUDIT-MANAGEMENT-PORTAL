@@ -70,7 +70,10 @@ public class UserService {
     @Transactional(readOnly = true)
     public List<UserDto> getAssignedUsers(Long userId) {
 
-        return userRepository.findByAssignedToId(userId)
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new BAMPException(Errors.USER_NOT_FOUND));
+
+        return user.getAssignedToUsers()
                 .stream()
                 .map(userDtoMapper::toDto)
                 .toList();

@@ -138,22 +138,31 @@ public class AuthService {
                 .orElseThrow(() ->
                         new BAMPException(Errors.USER_NOT_FOUND));
 
-        User assignedTo = null;
+        List<User> assignedToUsers = new ArrayList<>();
 
-        if (signUpRequest.getAssignedToUserId() != null) {
+        switch (creatorRole) {
+            case ADMIN -> {
+                assignedToUsers.addAll(
+                        userRepository.findByRole_RoleName(
+                                AppRole.ADMIN
+                        )
+                );
+            }
+            case HEAD -> {
+                assignedToUsers.add(creator);
 
-            assignedTo = userRepository.findById(
-                            signUpRequest.getAssignedToUserId()
-                    )
-                    .orElseThrow(() ->
-                            new BAMPException(
-                                    Errors.USER_NOT_FOUND
-                            ));
-
-            validateAssignment(
-                    signUpRequest.getRole(),
-                    assignedTo.getRole().getRoleName()
-            );
+                assignedToUsers.addAll(
+                        userRepository.findByRole_RoleName(
+                                AppRole.ADMIN
+                        )
+                );
+            }
+            case SPOC -> {
+                assignedToUsers.add(creator);
+                assignedToUsers.addAll(
+                        creator.getAssignedToUsers()
+                );
+            }
         }
 
         User user = User.builder()
@@ -165,9 +174,9 @@ public class AuthService {
                 .role(role)
                 .applications(applications)
                 .createdBy(creator)
-                .assignedTo(assignedTo)
-                .logout(false)
-                .isActive(false)
+                .assignedToUsers(assignedToUsers)
+                .logout(true)
+                .isActive(true)
                 .build();
 
         userRepository.save(user);
@@ -200,7 +209,7 @@ public class AuthService {
                 .orElseThrow(() ->
                         new BAMPException(Errors.USER_NOT_FOUND));
 
-        user.setIsActive(true);
+        user.setLogout(false);
         userRepository.save(user);
 
         List<Long> applicationIds = user.getApplications()
@@ -419,7 +428,7 @@ public class AuthService {
 
             User user = token.getUser();
 
-            user.setIsActive(false);
+            user.setLogout(true);
 
             userRepository.save(user);
         }
