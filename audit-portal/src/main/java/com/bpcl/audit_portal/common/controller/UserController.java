@@ -24,14 +24,13 @@ public class UserController {
         this.userService = userService;
     }
 
-
-    @GetMapping("/assigned-users")
-    public List<UserDto> getAssignedUsers(
-            @AuthenticationPrincipal UserDetailsImplementation userDetails
-    ) {
-        log.info("HI");
-        return userService.getAssignedUsers(
-                userDetails.getId()
-        );
+    @GetMapping("/parentUsers")
+    public List<UserDto> parentUsers(@AuthenticationPrincipal UserDetailsImplementation userDetails){
+        return userService.getParentUsers(userDetails.getId());
     }
+    @GetMapping("/childUsers")
+    public List<UserDto> childUsers(@AuthenticationPrincipal UserDetailsImplementation userDtails){
+        return userService.getChildUsers(userDtails.getId());
+    }
+
 }
