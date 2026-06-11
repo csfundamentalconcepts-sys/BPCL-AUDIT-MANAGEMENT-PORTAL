@@ -102,11 +102,11 @@ public class VaptController {
             @PathVariable Long auditId,
             @RequestParam("file") MultipartFile file,
             @RequestParam("password") String password,
-            @AuthenticationPrincipal User currentUser
+            @AuthenticationPrincipal UserDetailsImplementation currentUser
     ) {
 
         return ResponseEntity.ok(
-                vaptService.createNextPhase(auditId, file, password, currentUser)
+                vaptService.createNextPhase(auditId, file, password, currentUser.getId())
         );
     }
 }

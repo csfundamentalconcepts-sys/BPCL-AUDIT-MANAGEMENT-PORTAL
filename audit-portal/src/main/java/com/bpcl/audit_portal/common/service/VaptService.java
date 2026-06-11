@@ -1,4 +1,5 @@
 package com.bpcl.audit_portal.common.service;
+import com.bpcl.audit_portal.auth.model.UserDetailsImplementation;
 import com.bpcl.audit_portal.common.constants.VaptAuditStatus;
 import com.bpcl.audit_portal.common.constants.VaptPhaseStatus;
 import com.bpcl.audit_portal.common.dto.AuditInfoResponse;
@@ -136,12 +137,12 @@ public class VaptService {
                 .toList();
     }
 
-    @Transactional
     public VaptAuditPhase createNextPhase(
             Long auditId,
             MultipartFile file,
             String password,
-            User currentUser) {
+            Long userId) {
+        User currentUser = userRepository.findById(userId).orElseThrow( ()-> new BAMPException(Errors.USER_NOT_FOUND));
         VaptAudit audit = vaptAuditRepository.findById(auditId).orElseThrow(() -> new BAMPException(Errors.VAPT_AUDIT_NOT_FOUND));
         VaptAuditPhase lastPhase = vaptAuditPhaseRepository.findTopByVaptAudit_IdOrderByPhaseNumberDesc(auditId).orElse(null);
         if (lastPhase != null && lastPhase.getStatus() != VaptPhaseStatus.CLOSED) {
