@@ -68,14 +68,13 @@ public class UserService {
     }
 
     @Transactional(readOnly = true)
-    public List<UserDto> getAssignedUsers(Long userId) {
-
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new BAMPException(Errors.USER_NOT_FOUND));
-
-        return user.getAssignedToUsers()
-                .stream()
-                .map(userDtoMapper::toDto)
-                .toList();
+    public List<UserDto> getParentUsers(Long userId){
+        User user = userRepository.findById(userId).orElseThrow(()-> new BAMPException(Errors.USER_NOT_FOUND));
+        return user.getAssignedToUsers().stream().map(userDtoMapper::toDto).toList();
+    }
+    @Transactional(readOnly = true)
+    public List<UserDto> getChildUsers(Long userId){
+        User user = userRepository.findById(userId).orElseThrow(()-> new BAMPException(Errors.USER_NOT_FOUND));
+        return userRepository.getChildUsers(userId).stream().map(userDtoMapper::toDto).toList();
     }
 }

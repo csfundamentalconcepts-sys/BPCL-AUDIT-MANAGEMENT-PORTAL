@@ -56,7 +56,7 @@ public class ApplicationService {
 
         Application savedApplication = applicationRepository.save(application);
 
-        AppRole role = currentUser.getRole().getRoleName();
+        currentUser.getApplications().add(savedApplication);
         List<User> heads = currentUser.getAssignedToUsers();
         if (heads != null && !heads.isEmpty()) {
             for (User head : heads) {

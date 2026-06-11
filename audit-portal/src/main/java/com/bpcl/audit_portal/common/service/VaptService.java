@@ -1,4 +1,5 @@
 package com.bpcl.audit_portal.common.service;
+import com.bpcl.audit_portal.auth.controller.AuthController;
 import com.bpcl.audit_portal.auth.model.UserDetailsImplementation;
 import com.bpcl.audit_portal.common.constants.VaptAuditStatus;
 import com.bpcl.audit_portal.common.constants.VaptPhaseStatus;
@@ -9,6 +10,8 @@ import com.bpcl.audit_portal.common.exceptions.BAMPException;
 import com.bpcl.audit_portal.common.exceptions.Errors;
 import com.bpcl.audit_portal.common.model.*;
 import com.bpcl.audit_portal.common.repository.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
@@ -24,6 +27,7 @@ import java.util.Map;
 @Service
 public class VaptService {
 
+    private static final Logger log = LoggerFactory.getLogger(VaptService.class);
     private final VaptCardRepository vaptCardRepository;
     private final ApplicationRepository applicationRepository;
     private final VaptAuditRepository vaptAuditRepository;
@@ -137,7 +141,7 @@ public class VaptService {
                 .toList();
     }
 
-    public VaptAuditPhase createNextPhase(
+    public void createNextPhase(
             Long auditId,
             MultipartFile file,
             String password,
@@ -175,6 +179,7 @@ public class VaptService {
                 .block();
         List<Vulnerability> vulnerabilities = new ArrayList<>();
         if (response != null) {
+            log.info("Success");
             for (Map<String, Object> v : response) {
                 Vulnerability vuln = new Vulnerability();
                 vuln.setVulnerabilityId((String) v.get("Vulnerability ID"));
@@ -205,6 +210,5 @@ public class VaptService {
             }
         }
         vulnerabilityRepository.saveAll(vulnerabilities);
-        return phase;
     }
 }
