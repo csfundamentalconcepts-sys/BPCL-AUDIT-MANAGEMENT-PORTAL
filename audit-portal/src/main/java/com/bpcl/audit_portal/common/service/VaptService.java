@@ -178,10 +178,11 @@ public class VaptService {
                 )
                 .block();
         List<Vulnerability> vulnerabilities = new ArrayList<>();
-        if (response != null) {
+        if (response != null)  {
             log.info("Success");
             for (Map<String, Object> v : response) {
                 Vulnerability vuln = new Vulnerability();
+                log.info("Here is ",v.get("Vulnerability ID"));
                 vuln.setVulnerabilityId((String) v.get("Vulnerability ID"));
                 vuln.setAffectedAsset((String) v.get("Affected Asset"));
                 vuln.setName((String) v.get("Nameof the Vulnerability"));
@@ -208,6 +209,9 @@ public class VaptService {
                 vuln.setVulnerabilityPoints(pointEntities);
                 vulnerabilities.add(vuln);
             }
+        }
+        if(vulnerabilities.isEmpty()){
+            log.info("Everything is empty");
         }
         vulnerabilityRepository.saveAll(vulnerabilities);
     }

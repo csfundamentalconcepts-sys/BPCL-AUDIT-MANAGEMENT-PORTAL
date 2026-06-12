@@ -1,6 +1,8 @@
 package com.bpcl.audit_portal.auth.security;
 
 import com.bpcl.audit_portal.common.constants.AppRole;
+import com.bpcl.audit_portal.common.exceptions.BAMPException;
+import com.bpcl.audit_portal.common.exceptions.Errors;
 import com.bpcl.audit_portal.common.model.Role;
 import com.bpcl.audit_portal.common.model.User;
 import com.bpcl.audit_portal.common.repository.RoleRepository;
@@ -24,7 +26,7 @@ public class DataInitializer {
 
                 Role adminRole = roleRepository
                         .findByRoleName(AppRole.ADMIN)
-                        .orElseThrow();
+                        .orElseThrow(()-> new BAMPException(Errors.USER_NOT_FOUND));
 
                 User admin = User.builder()
                         .userName("admin@bpcl.com")
