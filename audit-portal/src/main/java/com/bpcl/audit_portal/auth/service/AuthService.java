@@ -18,6 +18,7 @@ import com.bpcl.audit_portal.common.repository.ApplicationRepository;
 import com.bpcl.audit_portal.common.repository.RoleRepository;
 import com.bpcl.audit_portal.common.repository.UserRepository;
 
+import com.bpcl.audit_portal.common.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 
 import org.slf4j.Logger;
@@ -40,6 +41,8 @@ import java.util.UUID;
 
 import static com.bpcl.audit_portal.auth.service.Util.validateAssignment;
 import static com.bpcl.audit_portal.auth.service.Util.validateRoleCreation;
+import static com.bpcl.audit_portal.common.constants.AppRole.ADMIN;
+import static com.bpcl.audit_portal.common.constants.AppRole.HEAD;
 
 @Service
 public class AuthService {
@@ -54,6 +57,7 @@ public class AuthService {
     private final RefreshTokenRepository refreshTokenRepository;
     private final PasswordResetTokenRepository passwordResetTokenRepository;
     private final UserDtoMapper userDtoMapper;
+    private final UserService userService;
 
     private static final Logger log =
             LoggerFactory.getLogger(AuthService.class);
@@ -61,6 +65,7 @@ public class AuthService {
     public AuthService(
             RefreshTokenService refreshTokenService,
             UserRepository userRepository,
+            UserService userService,
             RoleRepository roleRepository,
             PasswordEncoder passwordEncoder,
             AuthenticationManager authenticationManager,
@@ -80,6 +85,7 @@ public class AuthService {
         this.applicationRepository = applicationRepository;
         this.passwordResetTokenRepository = passwordResetTokenRepository;
         this.userDtoMapper = userDtoMapper;
+        this.userService = userService;
     }
 
     @Transactional
@@ -142,18 +148,16 @@ public class AuthService {
 
         switch (creatorRole) {
             case ADMIN -> {
-                assignedToUsers.addAll(
-                        userRepository.findByRole_RoleName(
-                                AppRole.ADMIN
-                        )
-                );
+                    if(AppRole.HEAD.equals(role.getRoleName())){
+                        assignedToUsers.addAll( userRepository.findByRole_RoleName(ADMIN));
+                    }
             }
             case HEAD -> {
                 assignedToUsers.add(creator);
 
                 assignedToUsers.addAll(
                         userRepository.findByRole_RoleName(
-                                AppRole.ADMIN
+                                ADMIN
                         )
                 );
             }
@@ -180,6 +184,14 @@ public class AuthService {
                 .build();
 
         userRepository.save(user);
+        if (AppRole.ADMIN.equals(role.getRoleName())) {
+            List<User> users = userRepository.getChildUsers(userDetails.getId());
+
+            users.forEach(u -> {
+                u.getAssignedToUsers().add(user);
+                userRepository.save(u);
+            });
+        }
         return userDtoMapper.toDto(user);
     }
 
