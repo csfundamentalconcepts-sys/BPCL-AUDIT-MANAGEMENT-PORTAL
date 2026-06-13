@@ -9,6 +9,7 @@ import com.bpcl.audit_portal.common.model.TicketHistory;
 import com.bpcl.audit_portal.common.repository.TicketHistoryRepository;
 import com.bpcl.audit_portal.common.repository.TicketRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -26,6 +27,7 @@ public class TicketHistoryService {
         this.ticketRepository = ticketRepository;
     }
 
+    @Transactional(readOnly = true)
     public List<TicketHistoryResponse> getTicketHistory(Long ticketId) {
 
         Ticket ticket = ticketRepository.findById(ticketId)

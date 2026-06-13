@@ -1,10 +1,12 @@
 package com.bpcl.audit_portal.common.service;
 
+import com.bpcl.audit_portal.common.constants.Priority;
 import com.bpcl.audit_portal.common.constants.TicketStatus;
 import com.bpcl.audit_portal.common.constants.TicketType;
 import com.bpcl.audit_portal.common.exceptions.BAMPException;
 import com.bpcl.audit_portal.common.exceptions.Errors;
 import com.bpcl.audit_portal.common.mapper.TicketDtoMapper;
+import com.bpcl.audit_portal.common.mapper.UserDtoMapper;
 import org.springframework.stereotype.Service;
 import com.bpcl.audit_portal.common.dto.*;
 import com.bpcl.audit_portal.common.model.*;
@@ -20,12 +22,14 @@ public class TicketService {
     private final TicketHistoryRepository historyRepository;
     private final ApplicationRepository applicationRepository;
     private final UserRepository userRepository;
+    private final UserDtoMapper userDtoMapper;
 
-    public TicketService(TicketRepository ticketRepository, TicketHistoryRepository historyRepository, ApplicationRepository applicationRepository, UserRepository userRepository) {
+    public TicketService(TicketRepository ticketRepository, TicketHistoryRepository historyRepository, ApplicationRepository applicationRepository, UserRepository userRepository, UserDtoMapper userDtoMapper) {
         this.ticketRepository = ticketRepository;
         this.historyRepository = historyRepository;
         this.applicationRepository = applicationRepository;
         this.userRepository = userRepository;
+        this.userDtoMapper = userDtoMapper;
     }
 
     public TicketResponse createTicket(CreateTicketRequest request, Long id) {
@@ -41,6 +45,7 @@ public class TicketService {
         }
 
         Ticket ticket = Ticket.builder()
+                .title(request.getTitle())
                 .description(request.getDescription())
                 .assignedTo(request.getAssignedTo())
                 .startDate(request.getStartDate())
@@ -50,6 +55,7 @@ public class TicketService {
                 .storyPoint(request.getStoryPoint())
                 .status(request.getStatus())
                 .type(request.getType())
+                .priority(request.getPriority())
                 .application(application)
                 .createdBy(currentUser)
                 .build();
@@ -80,6 +86,27 @@ public class TicketService {
                 case "description" -> {
                     oldValue = ticket.getDescription();
                     ticket.setDescription(newValue);
+                }
+
+                case "title" -> {
+                    oldValue = ticket.getTitle();
+                    ticket.setTitle(newValue);
+                }
+
+                case "priority" -> {
+                    oldValue = ticket.getPriority()!=null ? ticket.getPriority().name() : null;
+
+                    Boolean validPriority = false;
+                    for (Priority priority : Priority.values()) {
+                        if (priority.name().equals(newValue)) {
+                            validPriority = true;
+                            break;
+                        }
+                    }
+                    if (!validPriority) {
+                        throw new BAMPException(Errors.INVALID_PRIORITY);
+                    }
+                    ticket.setPriority(Priority.valueOf(newValue));
                 }
 
                 case "assignedTo" -> {
@@ -207,6 +234,7 @@ public class TicketService {
         return TicketDtoMapper.toDto(updatedTicket);
     }
 
+    @Transactional(readOnly = true)
     public List<TicketResponse> getTicketsByApplication(Long applicationId) {
         return ticketRepository.findByApplicationIdOrdered(applicationId)
                 .stream()

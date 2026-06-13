@@ -1,5 +1,6 @@
 package com.bpcl.audit_portal.common.model;
 
+import com.bpcl.audit_portal.common.constants.Priority;
 import com.bpcl.audit_portal.common.constants.TicketStatus;
 import com.bpcl.audit_portal.common.constants.TicketType;
 import jakarta.persistence.*;
@@ -21,6 +22,13 @@ public class Ticket {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Column(nullable = false,length = 200)
+    private String title;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private Priority priority;
 
     @Column(nullable = false, length = 2000)
     private String description;
