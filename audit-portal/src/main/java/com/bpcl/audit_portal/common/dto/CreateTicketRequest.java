@@ -1,5 +1,6 @@
 package com.bpcl.audit_portal.common.dto;
 
+import com.bpcl.audit_portal.common.constants.Priority;
 import com.bpcl.audit_portal.common.constants.TicketStatus;
 import com.bpcl.audit_portal.common.constants.TicketType;
 import lombok.Getter;
@@ -10,6 +11,8 @@ import java.time.LocalDate;
 @Getter
 @Setter
 public class CreateTicketRequest {
+
+    private String title;
 
     private String description;
 
@@ -30,4 +33,7 @@ public class CreateTicketRequest {
     private TicketStatus status;
 
     private TicketType type;
+
+    private Priority priority;
+
 }

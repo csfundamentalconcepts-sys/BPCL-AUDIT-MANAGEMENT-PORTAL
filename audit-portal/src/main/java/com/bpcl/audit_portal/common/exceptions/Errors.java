@@ -67,6 +67,9 @@ public enum Errors {
     INVALID_STATUS(HttpStatus.BAD_REQUEST, 1022L,
             "Invalid status value."),
 
+    INVALID_PRIORITY(HttpStatus.BAD_REQUEST, 1032L,
+            "Invalid priority value."),
+
     INVALID_TYPE(HttpStatus.BAD_REQUEST, 1023L,
             "Invalid type value."),
 

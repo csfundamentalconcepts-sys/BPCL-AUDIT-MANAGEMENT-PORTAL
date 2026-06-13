@@ -19,12 +19,10 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
-    private final UserDtoMapper userDtoMapper;
     private static final Logger log = LoggerFactory.getLogger(UserService.class);
     public UserService(UserRepository userRepository, RoleRepository roleRepository, UserDtoMapper userDtoMapper) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
-        this.userDtoMapper = userDtoMapper;
     }
 
     public List<User> getAllUsers() {
@@ -56,7 +54,7 @@ public class UserService {
 
         User user = findById(userId);
 
-        return userDtoMapper.toDto(user);
+        return UserDtoMapper.toDto(user);
     }
 
     public User findById(Long id){
@@ -70,11 +68,11 @@ public class UserService {
     @Transactional(readOnly = true)
     public List<UserDto> getParentUsers(Long userId){
         User user = userRepository.findById(userId).orElseThrow(()-> new BAMPException(Errors.USER_NOT_FOUND));
-        return user.getAssignedToUsers().stream().map(userDtoMapper::toDto).toList();
+        return user.getAssignedToUsers().stream().map(UserDtoMapper::toDto).toList();
     }
     @Transactional(readOnly = true)
     public List<UserDto> getChildUsers(Long userId){
         User user = userRepository.findById(userId).orElseThrow(()-> new BAMPException(Errors.USER_NOT_FOUND));
-        return userRepository.getChildUsers(userId).stream().map(userDtoMapper::toDto).toList();
+        return userRepository.getChildUsers(userId).stream().map(UserDtoMapper::toDto).toList();
     }
 }

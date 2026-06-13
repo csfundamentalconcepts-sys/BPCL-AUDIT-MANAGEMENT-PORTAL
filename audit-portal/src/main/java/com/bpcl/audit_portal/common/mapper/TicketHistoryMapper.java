@@ -2,7 +2,9 @@ package com.bpcl.audit_portal.common.mapper;
 
 import com.bpcl.audit_portal.common.dto.TicketHistoryResponse;
 import com.bpcl.audit_portal.common.model.TicketHistory;
+import org.springframework.stereotype.Component;
 
+@Component
 public class TicketHistoryMapper {
 
     private TicketHistoryMapper() {
