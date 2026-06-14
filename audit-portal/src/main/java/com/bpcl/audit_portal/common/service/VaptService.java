@@ -1,12 +1,7 @@
 package com.bpcl.audit_portal.common.service;
-import com.bpcl.audit_portal.auth.controller.AuthController;
-import com.bpcl.audit_portal.auth.model.UserDetailsImplementation;
 import com.bpcl.audit_portal.common.constants.VaptAuditStatus;
 import com.bpcl.audit_portal.common.constants.VaptPhaseStatus;
-import com.bpcl.audit_portal.common.dto.AuditInfoResponse;
-import com.bpcl.audit_portal.common.dto.VaptAuditResponse;
-import com.bpcl.audit_portal.common.dto.VaptCardResponse;
-import com.bpcl.audit_portal.common.dto.VulnerabilityResponse;
+import com.bpcl.audit_portal.common.dto.*;
 import com.bpcl.audit_portal.common.exceptions.BAMPException;
 import com.bpcl.audit_portal.common.exceptions.Errors;
 import com.bpcl.audit_portal.common.mapper.VulnerabilityMapper;
@@ -230,5 +225,8 @@ public class VaptService {
                 .stream()
                 .map(VulnerabilityMapper::toResponse)
                 .toList();
+    }
+
+    public VulnerabilityResponse updateVulnerability(Long vulnerabilityId, VulnerabilityUpdateRequest vulnerabilityUpdateRequest) {
     }
 }

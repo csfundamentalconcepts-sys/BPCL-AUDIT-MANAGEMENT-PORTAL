@@ -1,6 +1,7 @@
 package com.bpcl.audit_portal.common.controller;
 
 import com.bpcl.audit_portal.auth.model.UserDetailsImplementation;
+import com.bpcl.audit_portal.common.constants.AppRole;
 import com.bpcl.audit_portal.common.dto.CreateTicketRequest;
 import com.bpcl.audit_portal.common.dto.TicketResponse;
 import com.bpcl.audit_portal.common.dto.UpdateTicketRequest;
@@ -39,9 +40,18 @@ public class TicketController {
             @AuthenticationPrincipal UserDetailsImplementation userDetails
     ) {
 
+        AppRole role = userDetails.getAuthorities()
+                .stream()
+                .map(grantedAuthority -> grantedAuthority.getAuthority())
+                .filter(auth -> auth.startsWith("ROLE_"))
+                .map(AppRole::valueOf)
+                .findFirst()
+                .orElse(null);
+
         return ticketService.updateTicket(
                 ticketId,
                 userDetails.getId(),
+                role,
                 request
         );
     }
