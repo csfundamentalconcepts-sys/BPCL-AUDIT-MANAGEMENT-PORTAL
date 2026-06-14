@@ -1,5 +1,6 @@
 package com.bpcl.audit_portal.common.service;
 
+import com.bpcl.audit_portal.common.constants.AppRole;
 import com.bpcl.audit_portal.common.constants.Priority;
 import com.bpcl.audit_portal.common.constants.TicketStatus;
 import com.bpcl.audit_portal.common.constants.TicketType;
@@ -67,7 +68,7 @@ public class TicketService {
         );
     }
 
-    public TicketResponse updateTicket(Long ticketId,Long id, UpdateTicketRequest request) {
+    public TicketResponse updateTicket(Long ticketId,Long id,AppRole role, UpdateTicketRequest request) {
 
         Ticket ticket = ticketRepository.findById(ticketId)
                 .orElseThrow(() -> new BAMPException(Errors.TICKET_NOT_FOUND));
@@ -206,11 +207,19 @@ public class TicketService {
 
                 case "headComment" -> {
 
+                    if (role != AppRole.HEAD) {
+                        throw new BAMPException(Errors.UNAUTHORIZED);
+                    }
+
                     oldValue = ticket.getHeadComment();
                     ticket.setHeadComment(newValue);
                 }
 
                 case "spocComment" -> {
+
+                    if (role != AppRole.SPOC) {
+                        throw new BAMPException(Errors.UNAUTHORIZED);
+                    }
 
                     oldValue = ticket.getSpocComment();
                     ticket.setSpocComment(newValue);
