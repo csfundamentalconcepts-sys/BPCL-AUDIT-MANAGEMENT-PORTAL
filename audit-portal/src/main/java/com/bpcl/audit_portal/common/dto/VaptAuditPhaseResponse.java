@@ -1,7 +1,6 @@
 package com.bpcl.audit_portal.common.dto;
 
 import com.bpcl.audit_portal.common.constants.VaptPhaseStatus;
-import com.bpcl.audit_portal.common.model.User;
 import lombok.Builder;
 import lombok.Data;
 
@@ -9,7 +8,7 @@ import java.time.LocalDateTime;
 
 @Data
 @Builder
-public class VaptAuditPhaseResponses {
+public class VaptAuditPhaseResponse {
 
     private Long id;
 
@@ -17,7 +16,7 @@ public class VaptAuditPhaseResponses {
 
     private VaptPhaseStatus status;
 
-    private User createdBy;
+    private UserDto createdBy;
 
     private LocalDateTime createdAt;
 }
