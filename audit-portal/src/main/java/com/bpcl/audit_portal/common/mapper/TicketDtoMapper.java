@@ -14,6 +14,7 @@ public class TicketDtoMapper {
         return TicketResponse.builder()
                 .id(ticket.getId())
                 .description(ticket.getDescription())
+                .title(ticket.getTitle())
                 .assignedTo(ticket.getAssignedTo())
                 .startDate(ticket.getStartDate())
                 .targetDate(ticket.getTargetDate())
