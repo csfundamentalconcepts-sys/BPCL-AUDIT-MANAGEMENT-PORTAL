@@ -227,6 +227,6 @@ public class VaptService {
                 .toList();
     }
 
-    public VulnerabilityResponse updateVulnerability(Long vulnerabilityId, VulnerabilityUpdateRequest vulnerabilityUpdateRequest) {
-    }
+//    public VulnerabilityResponse updateVulnerability(Long vulnerabilityId, VulnerabilityUpdateRequest vulnerabilityUpdateRequest) {
+//    }
 }
