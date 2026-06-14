@@ -1,8 +1,13 @@
 package com.bpcl.audit_portal.common.dto;
 
+import jakarta.validation.constraints.NotBlank;
+
 public class LoginRequest {
+
+    @NotBlank
     private String userName;
 
+    @NotBlank
     private String password;
 
     public String getUserName(){
