@@ -100,7 +100,10 @@ public enum Errors {
             "Previous phase must be completed before creating a new one."),
 
     VULNERABILITY_NOT_FOUND(HttpStatus.NOT_FOUND, 1032L,
-            "Vulnerability not found.");
+            "Vulnerability not found."),
+
+    VAPT_PHASE_NOT_FOUND(HttpStatus.NOT_FOUND, 1033L,
+            "VAPT audit phase not found.");
 
     private final HttpStatus httpStatus;
     private final Long errorCode;

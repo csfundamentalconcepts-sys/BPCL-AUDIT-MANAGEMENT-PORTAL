@@ -6,8 +6,10 @@ import com.bpcl.audit_portal.common.constants.VaptPhaseStatus;
 import com.bpcl.audit_portal.common.dto.AuditInfoResponse;
 import com.bpcl.audit_portal.common.dto.VaptAuditResponse;
 import com.bpcl.audit_portal.common.dto.VaptCardResponse;
+import com.bpcl.audit_portal.common.dto.VulnerabilityResponse;
 import com.bpcl.audit_portal.common.exceptions.BAMPException;
 import com.bpcl.audit_portal.common.exceptions.Errors;
+import com.bpcl.audit_portal.common.mapper.VulnerabilityMapper;
 import com.bpcl.audit_portal.common.model.*;
 import com.bpcl.audit_portal.common.repository.*;
 import org.slf4j.Logger;
@@ -142,7 +144,7 @@ public class VaptService {
     }
 
     @Transactional
-    public void createNextPhase(
+    public List<VulnerabilityResponse> createNextPhase(
             Long auditId,
             MultipartFile file,
             String password,
@@ -209,6 +211,24 @@ public class VaptService {
                 vulnerabilities.add(vuln);
             }
         }
-        vulnerabilityRepository.saveAll(vulnerabilities);
+        List<Vulnerability> savedVulnerabilities =
+                vulnerabilityRepository.saveAll(vulnerabilities);
+
+        return savedVulnerabilities.stream()
+                .map(VulnerabilityMapper::toResponse)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<VulnerabilityResponse> getVulnerabilities(Long phaseId) {
+
+        if (!vaptAuditPhaseRepository.existsById(phaseId)) {
+            throw new BAMPException(Errors.VAPT_PHASE_NOT_FOUND);
+        }
+
+        return vulnerabilityRepository.findByVaptAuditPhaseId(phaseId)
+                .stream()
+                .map(VulnerabilityMapper::toResponse)
+                .toList();
     }
 }

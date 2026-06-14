@@ -46,6 +46,4 @@ public class TicketResponse {
     private LocalDateTime createdAt;
 
     private UserDto createdBy;
-
-    private List<TicketHistoryResponse> history;
 }

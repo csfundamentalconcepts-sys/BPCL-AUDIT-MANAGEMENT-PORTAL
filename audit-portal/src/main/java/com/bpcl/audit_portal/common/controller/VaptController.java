@@ -4,7 +4,6 @@ import com.bpcl.audit_portal.auth.model.UserDetailsImplementation;
 import com.bpcl.audit_portal.common.dto.*;
 import com.bpcl.audit_portal.common.model.VaptAudit;
 import com.bpcl.audit_portal.common.model.VaptCard;
-import com.bpcl.audit_portal.common.service.UserService;
 import com.bpcl.audit_portal.common.service.VaptService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -104,9 +103,16 @@ public class VaptController {
             @AuthenticationPrincipal UserDetailsImplementation currentUser
     ) {
 
-        vaptService.createNextPhase(auditId, file, password, currentUser.getId());
+        List<VulnerabilityResponse> response =  vaptService.createNextPhase(auditId, file, password, currentUser.getId());
         return ResponseEntity.ok(
-              "Success"
+              response
         );
     }
+
+    @GetMapping("/audit/{phaseId}/vulnerabilities")
+    public ResponseEntity<?>getVulnerabilities(@PathVariable Long phaseId){
+          List<VulnerabilityResponse> response = vaptService.getVulnerabilities(phaseId);
+          return ResponseEntity.ok(response);
+    }
+
 }

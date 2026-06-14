@@ -6,7 +6,7 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class TicketFieldUpdateRequest {
+public class FieldUpdateRequest {
 
     @NotBlank
     private String fieldName;

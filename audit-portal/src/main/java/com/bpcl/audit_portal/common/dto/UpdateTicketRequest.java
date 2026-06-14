@@ -11,5 +11,5 @@ import java.util.List;
 public class UpdateTicketRequest {
 
     @NotEmpty
-    private List<TicketFieldUpdateRequest> updates;
+    private List<FieldUpdateRequest> updates;
 }

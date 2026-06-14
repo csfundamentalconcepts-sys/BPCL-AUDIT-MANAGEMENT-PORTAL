@@ -7,9 +7,6 @@ import org.springframework.stereotype.Component;
 @Component
 public class TicketHistoryMapper {
 
-    private TicketHistoryMapper() {
-    }
-
     public static TicketHistoryResponse toDto(TicketHistory history) {
         return TicketHistoryResponse.builder()
                 .fieldName(history.getFieldName())
