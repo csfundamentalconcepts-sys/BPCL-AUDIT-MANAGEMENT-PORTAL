@@ -75,7 +75,7 @@ public class TicketService {
         User currentUser = userRepository.findById(id)
                 .orElseThrow(() -> new BAMPException(Errors.USER_NOT_FOUND));
 
-        for (TicketFieldUpdateRequest update : request.getUpdates()) {
+        for (FieldUpdateRequest update : request.getUpdates()) {
 
             String fieldName = update.getFieldName();
             String newValue = update.getNewValue();
