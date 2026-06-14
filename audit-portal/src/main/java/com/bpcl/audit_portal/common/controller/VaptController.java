@@ -1,6 +1,7 @@
 package com.bpcl.audit_portal.common.controller;
 
 import com.bpcl.audit_portal.auth.model.UserDetailsImplementation;
+import com.bpcl.audit_portal.common.constants.AppRole;
 import com.bpcl.audit_portal.common.dto.*;
 import com.bpcl.audit_portal.common.model.VaptAudit;
 import com.bpcl.audit_portal.common.model.VaptCard;
@@ -108,6 +109,16 @@ public class VaptController {
               response
         );
     }
+    @GetMapping("/audit/{auditId}/phase")
+    public ResponseEntity<?> getPhase(
+            @PathVariable Long auditId
+    ) {
+
+        List<VaptAuditPhaseResponse> response =  vaptService.getPhase(auditId);
+        return ResponseEntity.ok(
+                response
+        );
+    }
 
     @GetMapping("/audit/{phaseId}/vulnerabilities")
     public ResponseEntity<?>getVulnerabilities(@PathVariable Long phaseId){
@@ -116,14 +127,22 @@ public class VaptController {
     }
 
 //    @PatchMapping("/audit/{vulnerabilityId}/vulnerability")
-//    public ResponseEntity<?>updateVulnerabilities(@PathVariable Long vulnerabilityId,@RequestBody VulnerabilityUpdateRequest request){
-//         VulnerabilityResponse response = vaptService.updateVulnerability(vulnerabilityId,request);
-//         return ResponseEntity.ok(response);
-//    }
+//    public ResponseEntity<?> updateVulnerabilities(@PathVariable Long vulnerabilityId, @RequestBody VulnerabilityUpdateRequest request,@AuthenticationPrincipal UserDetailsImplementation userDetails) {
 //
+//        AppRole role = userDetails.getAuthorities()
+//                .stream()
+//                .map(grantedAuthority -> grantedAuthority.getAuthority())
+//                .filter(auth -> auth.startsWith("ROLE_"))
+//                .map(AppRole::valueOf)
+//                .findFirst()
+//                .orElse(null);
+//        VulnerabilityResponse response = vaptService.updateVulnerability(vulnerabilityId, role , request);
+//        return ResponseEntity.ok(response);
+//    }
+
 //    @PatchMapping("/audit/{vulnerabilityId}/vulnerability")
-//    public ResponseEntity<?>VaptAuditStatusChange(@PathVariable Long vulnerabilityId,@RequestBody VulnerabilityUpdateRequest request){
-//        VulnerabilityResponse response = vaptService.updateVulnerability(vulnerabilityId,request);
+//    public ResponseEntity<?> VaptAuditStatusChange(@PathVariable Long vulnerabilityId, @RequestBody VulnerabilityUpdateRequest request) {
+//        VulnerabilityResponse response = vaptService.updateVulnerability(vulnerabilityId, request);
 //        return ResponseEntity.ok(response);
 //    }
 }

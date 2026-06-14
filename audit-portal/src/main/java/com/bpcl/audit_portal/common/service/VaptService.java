@@ -1,9 +1,11 @@
 package com.bpcl.audit_portal.common.service;
+import com.bpcl.audit_portal.common.constants.AppRole;
 import com.bpcl.audit_portal.common.constants.VaptAuditStatus;
 import com.bpcl.audit_portal.common.constants.VaptPhaseStatus;
 import com.bpcl.audit_portal.common.dto.*;
 import com.bpcl.audit_portal.common.exceptions.BAMPException;
 import com.bpcl.audit_portal.common.exceptions.Errors;
+import com.bpcl.audit_portal.common.mapper.VaptAuditPhaseMapper;
 import com.bpcl.audit_portal.common.mapper.VulnerabilityMapper;
 import com.bpcl.audit_portal.common.model.*;
 import com.bpcl.audit_portal.common.repository.*;
@@ -227,6 +229,18 @@ public class VaptService {
                 .toList();
     }
 
-//    public VulnerabilityResponse updateVulnerability(Long vulnerabilityId, VulnerabilityUpdateRequest vulnerabilityUpdateRequest) {
+//    public VulnerabilityResponse updateVulnerability(Long vulnerabilityId, AppRole role, VulnerabilityUpdateRequest request) {
+//
 //    }
+
+    @Transactional(readOnly = true)
+    public List<VaptAuditPhaseResponse> getPhase(Long auditId) {
+         if(!vaptAuditRepository.existsById(auditId)){
+             throw new BAMPException(Errors.VAPT_AUDIT_NOT_FOUND);
+         }
+         return vaptAuditPhaseRepository.findByVaptAuditId(auditId)
+                 .stream()
+                 .map(VaptAuditPhaseMapper :: toResponse)
+                 .toList();
+    }
 }
