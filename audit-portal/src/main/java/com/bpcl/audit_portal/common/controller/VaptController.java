@@ -115,15 +115,15 @@ public class VaptController {
           return ResponseEntity.ok(response);
     }
 
-    @PatchMapping("/audit/{vulnerabilityId}/vulnerability")
-    public ResponseEntity<?>updateVulnerabilities(@PathVariable Long vulnerabilityId,@RequestBody VulnerabilityUpdateRequest request){
-         VulnerabilityResponse response = vaptService.updateVulnerability(vulnerabilityId,request);
-         return ResponseEntity.ok(response);
-    }
-
-    @PatchMapping("/audit/{vulnerabilityId}/vulnerability")
-    public ResponseEntity<?>VaptAuditStatusChange(@PathVariable Long vulnerabilityId,@RequestBody VulnerabilityUpdateRequest request){
-        VulnerabilityResponse response = vaptService.updateVulnerability(vulnerabilityId,request);
-        return ResponseEntity.ok(response);
-    }
+//    @PatchMapping("/audit/{vulnerabilityId}/vulnerability")
+//    public ResponseEntity<?>updateVulnerabilities(@PathVariable Long vulnerabilityId,@RequestBody VulnerabilityUpdateRequest request){
+//         VulnerabilityResponse response = vaptService.updateVulnerability(vulnerabilityId,request);
+//         return ResponseEntity.ok(response);
+//    }
+//
+//    @PatchMapping("/audit/{vulnerabilityId}/vulnerability")
+//    public ResponseEntity<?>VaptAuditStatusChange(@PathVariable Long vulnerabilityId,@RequestBody VulnerabilityUpdateRequest request){
+//        VulnerabilityResponse response = vaptService.updateVulnerability(vulnerabilityId,request);
+//        return ResponseEntity.ok(response);
+//    }
 }
