@@ -44,6 +44,7 @@ public class TicketController {
                 .stream()
                 .map(grantedAuthority -> grantedAuthority.getAuthority())
                 .filter(auth -> auth.startsWith("ROLE_"))
+                .map(auth -> auth.substring("ROLE_".length()))
                 .map(AppRole::valueOf)
                 .findFirst()
                 .orElse(null);

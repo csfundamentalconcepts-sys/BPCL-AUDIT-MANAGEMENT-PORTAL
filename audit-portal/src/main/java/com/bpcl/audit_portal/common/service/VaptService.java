@@ -141,45 +141,56 @@ public class VaptService {
     }
 
     @Transactional
-    public List<VulnerabilityResponse> createNextPhase(
-            Long auditId,
-            MultipartFile file,
-            String password,
-            Long userId) {
-        User currentUser = userRepository.findById(userId).orElseThrow( ()-> new BAMPException(Errors.USER_NOT_FOUND));
-        VaptAudit audit = vaptAuditRepository.findById(auditId).orElseThrow(() -> new BAMPException(Errors.VAPT_AUDIT_NOT_FOUND));
-        VaptAuditPhase lastPhase = vaptAuditPhaseRepository.findTopByVaptAudit_IdOrderByPhaseNumberDesc(auditId).orElse(null);
+    public VaptAuditPhase createPhase(Long auditId, Long userId) {
+
+        User currentUser = userRepository.findById(userId)
+                .orElseThrow(() -> new BAMPException(Errors.USER_NOT_FOUND));
+
+        VaptAudit audit = vaptAuditRepository.findById(auditId)
+                .orElseThrow(() -> new BAMPException(Errors.VAPT_AUDIT_NOT_FOUND));
+
+        VaptAuditPhase lastPhase =
+                vaptAuditPhaseRepository.findTopByVaptAudit_IdOrderByPhaseNumberDesc(auditId)
+                        .orElse(null);
+
         if (lastPhase != null && lastPhase.getStatus() != VaptPhaseStatus.CLOSED) {
             throw new BAMPException(Errors.PREVIOUS_PHASE_NOT_COMPLETED);
         }
-        Integer nextPhase =
-                (lastPhase == null)
-                        ? 1
-                        : lastPhase.getPhaseNumber() + 1;
+
+        int nextPhase = (lastPhase == null) ? 1 : lastPhase.getPhaseNumber() + 1;
+
         VaptAuditPhase phase = VaptAuditPhase.builder()
                 .phaseNumber(nextPhase)
                 .status(VaptPhaseStatus.OPEN)
                 .vaptAudit(audit)
                 .createdBy(currentUser)
                 .build();
-        phase = vaptAuditPhaseRepository.save(phase);
-        List<Map<String, Object>> response = webClient.post()
+
+        return vaptAuditPhaseRepository.save(phase);
+    }
+
+    public List<Map<String, Object>> parsePdf(MultipartFile file, String password) {
+
+        return webClient.post()
                 .uri("/parse-pdf")
                 .contentType(MediaType.MULTIPART_FORM_DATA)
-                .body(
-                        BodyInserters.fromMultipartData(
-                                "file",
-                                file.getResource()
-                        ).with("password", password)
-                )
+                .body(BodyInserters.fromMultipartData("file", file.getResource())
+                        .with("password", password))
                 .retrieve()
-                .bodyToMono(
-                        new ParameterizedTypeReference<List<Map<String, Object>>>() {}
-                )
+                .bodyToMono(new ParameterizedTypeReference<List<Map<String, Object>>>() {})
                 .block();
+    }
+    @Transactional
+    public List<Vulnerability> saveVulnerabilities(
+            List<Map<String, Object>> response,
+            VaptAuditPhase phase
+    ) {
+
         List<Vulnerability> vulnerabilities = new ArrayList<>();
-        if (response != null )  {
+
+        if (response != null) {
             for (Map<String, Object> v : response) {
+
                 Vulnerability vuln = new Vulnerability();
                 vuln.setVulnerabilityId((String) v.get("Vulnerability ID"));
                 vuln.setAffectedAsset((String) v.get("Affected Asset"));
@@ -194,7 +205,9 @@ public class VaptService {
                 vuln.setReference((String) v.get("Reference"));
                 vuln.setNewOrRepeat((String) v.get("New or repeat"));
                 vuln.setVaptAuditPhase(phase);
+
                 List<String> points = (List<String>) v.get("Vulnerability Point");
+
                 List<VulnerabilityPoint> pointEntities = new ArrayList<>();
                 if (points != null) {
                     for (String point : points) {
@@ -204,17 +217,32 @@ public class VaptService {
                         pointEntities.add(vp);
                     }
                 }
+
                 vuln.setVulnerabilityPoints(pointEntities);
                 vulnerabilities.add(vuln);
             }
         }
-        List<Vulnerability> savedVulnerabilities =
-                vulnerabilityRepository.saveAll(vulnerabilities);
 
-        return savedVulnerabilities.stream()
+        return vulnerabilityRepository.saveAll(vulnerabilities);
+    }
+
+    public List<VulnerabilityResponse> createNextPhase(
+            Long auditId,
+            MultipartFile file,
+            String password,
+            Long userId
+    ) {
+        VaptAuditPhase phase = createPhase(auditId, userId);
+
+        List<Map<String, Object>> response = parsePdf(file, password);
+
+        List<Vulnerability> saved = saveVulnerabilities(response, phase);
+
+        return saved.stream()
                 .map(VulnerabilityMapper::toResponse)
                 .toList();
     }
+
 
     @Transactional(readOnly = true)
     public List<VulnerabilityResponse> getVulnerabilities(Long phaseId) {
