@@ -253,4 +253,56 @@ public class TicketService {
                 })
                 .toList();
     }
+    @Transactional(readOnly = true)
+    public TicketSummaryResponse getTicketSummaryByApplication(Long applicationId) {
+
+        return TicketSummaryResponse.builder()
+                .totalTickets(
+                        ticketRepository.countByApplicationId(applicationId)
+                )
+                .inProgressTickets(
+                        ticketRepository.countByApplicationIdAndStatus(
+                                applicationId,
+                                TicketStatus.IN_PROGRESS
+                        )
+                )
+                .notStartedTickets(
+                        ticketRepository.countByApplicationIdAndStatus(
+                                applicationId,
+                                TicketStatus.NOT_STARTED
+                        )
+                )
+                .holdTickets(
+                        ticketRepository.countByApplicationIdAndStatus(
+                                applicationId,
+                                TicketStatus.HOLD
+                        )
+                )
+                .closedTickets(
+                        ticketRepository.countByApplicationIdAndStatus(
+                                applicationId,
+                                TicketStatus.CLOSED
+                        )
+                )
+                .build();
+    }
+    @Transactional(readOnly = true)
+    public TicketSummaryResponse getTicketSummary() {
+
+        return TicketSummaryResponse.builder()
+                .totalTickets(ticketRepository.count())
+                .inProgressTickets(
+                        ticketRepository.countByStatus(TicketStatus.IN_PROGRESS)
+                )
+                .notStartedTickets(
+                        ticketRepository.countByStatus(TicketStatus.NOT_STARTED)
+                )
+                .holdTickets(
+                        ticketRepository.countByStatus(TicketStatus.HOLD)
+                )
+                .closedTickets(
+                        ticketRepository.countByStatus(TicketStatus.CLOSED)
+                )
+                .build();
+    }
 }
