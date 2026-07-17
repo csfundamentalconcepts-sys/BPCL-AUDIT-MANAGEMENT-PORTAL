@@ -4,6 +4,7 @@ import com.bpcl.audit_portal.auth.model.UserDetailsImplementation;
 import com.bpcl.audit_portal.common.constants.AppRole;
 import com.bpcl.audit_portal.common.dto.CreateTicketRequest;
 import com.bpcl.audit_portal.common.dto.TicketResponse;
+import com.bpcl.audit_portal.common.dto.TicketSummaryResponse;
 import com.bpcl.audit_portal.common.dto.UpdateTicketRequest;
 import com.bpcl.audit_portal.common.service.TicketService;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -62,5 +63,30 @@ public class TicketController {
             @PathVariable Long applicationId
     ) {
         return ticketService.getTicketsByApplication(applicationId);
+    }
+    @GetMapping("/application/{applicationId}/summary")
+    public TicketSummaryResponse getTicketSummary(
+            @PathVariable Long applicationId
+    ) {
+        return ticketService.getTicketSummaryByApplication(applicationId);
+    }
+
+    @GetMapping("/summary")
+    public TicketSummaryResponse getTicketSummary() {
+        return ticketService.getTicketSummary();
+    }
+
+    @GetMapping("/user/{userId}/summary")
+    public TicketSummaryResponse getUserTicketSummary(
+            @PathVariable Long userId
+    ) {
+        return ticketService.getTicketSummaryByUser(userId);
+    }
+
+    @GetMapping("/user/{userId}")
+    public List<TicketResponse> getTicketsByUser(
+            @PathVariable Long userId
+    ) {
+        return ticketService.getTicketsByUser(userId);
     }
 }

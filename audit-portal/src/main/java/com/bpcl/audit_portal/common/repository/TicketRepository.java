@@ -1,5 +1,6 @@
 package com.bpcl.audit_portal.common.repository;
 
+import com.bpcl.audit_portal.common.constants.TicketStatus;
 import com.bpcl.audit_portal.common.model.Ticket;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -20,5 +21,18 @@ public interface TicketRepository extends JpaRepository<Ticket, Long> {
         END,
         t.updatedAt DESC
     """)
+
     List<Ticket> findByApplicationIdOrdered(Long applicationId);
+
+    Long countByStatus(TicketStatus status);
+
+    Long countByApplicationId(Long applicationId);
+
+    Long countByApplicationIdAndStatus(Long applicationId, TicketStatus status);
+
+    List<Ticket> findByAssignedToIdOrderByUpdatedAtDesc(Long userId);
+
+    Long countByAssignedToId(Long userId);
+
+    Long countByAssignedToIdAndStatus(Long userId, TicketStatus status);
 }
