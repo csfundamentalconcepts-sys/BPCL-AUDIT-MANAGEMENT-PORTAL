@@ -75,4 +75,18 @@ public class TicketController {
     public TicketSummaryResponse getTicketSummary() {
         return ticketService.getTicketSummary();
     }
+
+    @GetMapping("/user/{userId}/summary")
+    public TicketSummaryResponse getUserTicketSummary(
+            @PathVariable Long userId
+    ) {
+        return ticketService.getTicketSummaryByUser(userId);
+    }
+
+    @GetMapping("/user/{userId}")
+    public List<TicketResponse> getTicketsByUser(
+            @PathVariable Long userId
+    ) {
+        return ticketService.getTicketsByUser(userId);
+    }
 }

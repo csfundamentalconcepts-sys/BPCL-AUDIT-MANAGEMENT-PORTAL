@@ -305,4 +305,45 @@ public class TicketService {
                 )
                 .build();
     }
+    @Transactional(readOnly = true)
+    public TicketSummaryResponse getTicketSummaryByUser(Long userId) {
+
+        return TicketSummaryResponse.builder()
+                .totalTickets(
+                        ticketRepository.countByAssignedToId(userId)
+                )
+                .inProgressTickets(
+                        ticketRepository.countByAssignedToIdAndStatus(
+                                userId,
+                                TicketStatus.IN_PROGRESS
+                        )
+                )
+                .notStartedTickets(
+                        ticketRepository.countByAssignedToIdAndStatus(
+                                userId,
+                                TicketStatus.NOT_STARTED
+                        )
+                )
+                .holdTickets(
+                        ticketRepository.countByAssignedToIdAndStatus(
+                                userId,
+                                TicketStatus.HOLD
+                        )
+                )
+                .closedTickets(
+                        ticketRepository.countByAssignedToIdAndStatus(
+                                userId,
+                                TicketStatus.CLOSED
+                        )
+                )
+                .build();
+    }
+    @Transactional(readOnly = true)
+    public List<TicketResponse> getTicketsByUser(Long userId) {
+
+        return ticketRepository.findByAssignedToIdOrderByUpdatedAtDesc(userId)
+                .stream()
+                .map(TicketDtoMapper::toDto)
+                .toList();
+    }
 }

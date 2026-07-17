@@ -33,8 +33,6 @@ public class Ticket {
     @Column(nullable = false, length = 2000)
     private String description;
 
-    private String assignedTo;
-
     private String startDate;
 
     private String targetDate;
@@ -48,6 +46,10 @@ public class Ticket {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by", nullable = false, updatable = false)
     private User createdBy;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "assigned_to")
+    private User assignedTo;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "application_id", nullable = false)
