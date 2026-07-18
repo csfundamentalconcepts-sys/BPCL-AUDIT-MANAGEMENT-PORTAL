@@ -36,16 +36,16 @@ public class VaptController {
 
         return ResponseEntity.ok(
                 VaptCardResponse.builder()
-                .id(card.getId())
-                .applicationId(card.getApplication().getId())
-                .auditInfo(
-                        AuditInfoResponse.builder()
-                                .userId(card.getCreatedBy().getId())
-                                .username(card.getCreatedBy().getUserName())
-                                .createdAt(card.getCreatedAt())
-                                .build()
-                )
-                .build()
+                        .id(card.getId())
+                        .applicationId(card.getApplication().getId())
+                        .auditInfo(
+                                AuditInfoResponse.builder()
+                                        .userId(card.getCreatedBy().getId())
+                                        .username(card.getCreatedBy().getUserName())
+                                        .createdAt(card.getCreatedAt())
+                                        .build()
+                        )
+                        .build()
         );
     }
 
@@ -76,6 +76,7 @@ public class VaptController {
                         .build()
         );
     }
+
     @GetMapping("/card/{cardId}/audits")
     public ResponseEntity<List<VaptAuditResponse>> getAuditsByCardId(
             @PathVariable Long cardId) {
@@ -86,6 +87,7 @@ public class VaptController {
                 audits
         );
     }
+
     @GetMapping("/card/application/{applicationId}")
     public ResponseEntity<VaptCardResponse> getCardByApplicationId(
             @PathVariable Long applicationId) {
@@ -96,6 +98,7 @@ public class VaptController {
                 vaptCardResponse
         );
     }
+
     @PostMapping("/audit/{auditId}/phase")
     public ResponseEntity<?> createPhase(
             @PathVariable Long auditId,
@@ -104,26 +107,27 @@ public class VaptController {
             @AuthenticationPrincipal UserDetailsImplementation currentUser
     ) {
 
-        List<VulnerabilityResponse> response =  vaptService.createNextPhase(auditId, file, password, currentUser.getId());
+        List<VulnerabilityResponse> response = vaptService.createNextPhase(auditId, file, password, currentUser.getId());
         return ResponseEntity.ok(
-              response
+                response
         );
     }
+
     @GetMapping("/audit/{auditId}/phase")
     public ResponseEntity<?> getPhase(
             @PathVariable Long auditId
     ) {
 
-        List<VaptAuditPhaseResponse> response =  vaptService.getPhase(auditId);
+        List<VaptAuditPhaseResponse> response = vaptService.getPhase(auditId);
         return ResponseEntity.ok(
                 response
         );
     }
 
     @GetMapping("/audit/{phaseId}/vulnerabilities")
-    public ResponseEntity<?>getVulnerabilities(@PathVariable Long phaseId){
-          List<VulnerabilityResponse> response = vaptService.getVulnerabilities(phaseId);
-          return ResponseEntity.ok(response);
+    public ResponseEntity<?> getVulnerabilities(@PathVariable Long phaseId) {
+        List<VulnerabilityResponse> response = vaptService.getVulnerabilities(phaseId);
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/vulnerabilities/stats")
@@ -134,6 +138,7 @@ public class VaptController {
                 vaptService.getVulnerabilityStats(currentUser.getId())
         );
     }
+
     @GetMapping("/users/{userId}/vulnerabilities/stats")
     public ResponseEntity<VulnerabilityStatsResponse> vulnerabilityStatsByUserId(
             @PathVariable Long userId) {
@@ -142,10 +147,12 @@ public class VaptController {
                 vaptService.getVulnerabilityStats(userId)
         );
     }
+
     @GetMapping("/vulnerabilities/cwe-stats")
     public ResponseEntity<List<CweStatsResponse>> getCweStats() {
         return ResponseEntity.ok(vaptService.getCweStats());
     }
+
     @GetMapping("/applications/{applicationId}/cwe-stats")
     public ResponseEntity<List<CweStatsResponse>> getApplicationCweStats(
             @PathVariable Long applicationId) {
@@ -154,6 +161,7 @@ public class VaptController {
                 vaptService.getApplicationCweStats(applicationId)
         );
     }
+
     @GetMapping("/audits/{auditId}/cwe-stats")
     public ResponseEntity<List<CweStatsResponse>> getAuditCweStats(
             @PathVariable Long auditId) {
@@ -162,6 +170,7 @@ public class VaptController {
                 vaptService.getAuditCweStats(auditId)
         );
     }
+
     @GetMapping("/phases/{phaseId}/cwe-stats")
     public ResponseEntity<List<CweStatsResponse>> getPhaseCweStats(
             @PathVariable Long phaseId) {
@@ -170,6 +179,7 @@ public class VaptController {
                 vaptService.getPhaseCweStats(phaseId)
         );
     }
+
     @GetMapping("/summary")
     public ResponseEntity<VulnerabilityStatsResponse> SystemSummary() {
 
@@ -205,23 +215,31 @@ public class VaptController {
         );
     }
 
-//    @PatchMapping("/audit/{vulnerabilityId}/vulnerability")
-//    public ResponseEntity<?> updateVulnerabilities(@PathVariable Long vulnerabilityId, @RequestBody VulnerabilityUpdateRequest request,@AuthenticationPrincipal UserDetailsImplementation userDetails) {
-//
-//        AppRole role = userDetails.getAuthorities()
-//                .stream()
-//                .map(grantedAuthority -> grantedAuthority.getAuthority())
-//                .filter(auth -> auth.startsWith("ROLE_"))
-//                .map(AppRole::valueOf)
-//                .findFirst()
-//                .orElse(null);
-//        VulnerabilityResponse response = vaptService.updateVulnerability(vulnerabilityId, role , request);
-//        return ResponseEntity.ok(response);
-//    }
+    @PatchMapping("/vulnerabilities/{vulnerabilityId}")
+    public ResponseEntity<VulnerabilityResponse> updateVulnerability(
+            @PathVariable Long vulnerabilityId,
+            @RequestBody VulnerabilityUpdateRequest request) {
 
-//    @PatchMapping("/audit/{vulnerabilityId}/vulnerability")
-//    public ResponseEntity<?> VaptAuditStatusChange(@PathVariable Long vulnerabilityId, @RequestBody VulnerabilityUpdateRequest request) {
-//        VulnerabilityResponse response = vaptService.updateVulnerability(vulnerabilityId, request);
-//        return ResponseEntity.ok(response);
-//    }
+        return ResponseEntity.ok(
+                vaptService.updateVulnerability(vulnerabilityId, request)
+        );
+    }
+
+    @PatchMapping("/phases/{phaseId}/close")
+    public ResponseEntity<Void> closePhase(
+            @PathVariable Long phaseId) {
+
+        vaptService.closePhase(phaseId);
+
+        return ResponseEntity.ok().build();
+    }
+
+    @PatchMapping("/audits/{auditId}/close")
+    public ResponseEntity<Void> closeAudit(
+            @PathVariable Long auditId) {
+
+        vaptService.closeAudit(auditId);
+
+        return ResponseEntity.ok().build();
+    }
 }

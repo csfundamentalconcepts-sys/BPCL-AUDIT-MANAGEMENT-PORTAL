@@ -103,7 +103,13 @@ public enum Errors {
             "Vulnerability not found."),
 
     VAPT_PHASE_NOT_FOUND(HttpStatus.NOT_FOUND, 1033L,
-            "VAPT audit phase not found.");
+            "VAPT audit phase not found."),
+
+    VAPT_PHASE_CANNOT_BE_CLOSED(HttpStatus.BAD_REQUEST, 1034L,
+            "All OPEN vulnerabilities must be FIXED before closing phase."),
+
+    VAPT_AUDIT_CANNOT_BE_CLOSED(HttpStatus.BAD_REQUEST, 1035L,
+            "All vulnerabilities of the last phase must be CLOSED before closing the audit.");;
 
     private final HttpStatus httpStatus;
     private final Long errorCode;
