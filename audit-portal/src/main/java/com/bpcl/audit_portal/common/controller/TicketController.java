@@ -64,25 +64,30 @@ public class TicketController {
     ) {
         return ticketService.getTicketsByApplication(applicationId);
     }
-    @GetMapping("/application/{applicationId}/summary")
+    @GetMapping("/application/{applicationId}/ticket_summary")
     public TicketSummaryResponse getTicketSummary(
             @PathVariable Long applicationId
     ) {
         return ticketService.getTicketSummaryByApplication(applicationId);
     }
 
-    @GetMapping("/summary")
+    @GetMapping("/ticket_summary")
     public TicketSummaryResponse getTicketSummary() {
         return ticketService.getTicketSummary();
     }
 
-    @GetMapping("/user/{userId}/summary")
+    @GetMapping("/user/ticket_summary")
     public TicketSummaryResponse getUserTicketSummary(
+            @AuthenticationPrincipal UserDetailsImplementation userDetails
+    ) {
+        return ticketService.getTicketSummaryByUser(userDetails.getId());
+    }
+    @GetMapping("/user/{userId}/ticket_summary")
+    public TicketSummaryResponse getTicketSummaryByUser(
             @PathVariable Long userId
     ) {
         return ticketService.getTicketSummaryByUser(userId);
     }
-
     @GetMapping("/user/{userId}")
     public List<TicketResponse> getTicketsByUser(
             @PathVariable Long userId

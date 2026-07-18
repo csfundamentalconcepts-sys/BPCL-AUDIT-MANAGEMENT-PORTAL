@@ -72,4 +72,5 @@ public class ApplicationService {
                 .map(ApplicationMapper::toDto)
                 .toList();
     }
+
 }
