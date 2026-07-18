@@ -43,4 +43,10 @@ public class ApplicationController {
                 userDetails.getId()
         );
     }
+    @GetMapping("/assigned")
+    @PreAuthorize("hasAnyRole('ADMIN')")
+    public List<ApplicationResponse> getAllApplications() {
+        return applicationService.getAllApplications();
+    }
+
 }

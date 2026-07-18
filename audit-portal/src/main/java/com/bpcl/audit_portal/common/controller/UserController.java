@@ -32,5 +32,4 @@ public class UserController {
     public List<UserDto> childUsers(@AuthenticationPrincipal UserDetailsImplementation userDtails){
         return userService.getChildUsers(userDtails.getId());
     }
-
 }

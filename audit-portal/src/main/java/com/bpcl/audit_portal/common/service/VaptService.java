@@ -1,5 +1,5 @@
 package com.bpcl.audit_portal.common.service;
-import com.bpcl.audit_portal.common.constants.AppRole;
+import com.bpcl.audit_portal.common.constants.NewOrRepeat;
 import com.bpcl.audit_portal.common.constants.VaptAuditStatus;
 import com.bpcl.audit_portal.common.constants.VaptPhaseStatus;
 import com.bpcl.audit_portal.common.dto.*;
@@ -270,5 +270,110 @@ public class VaptService {
                  .stream()
                  .map(VaptAuditPhaseMapper :: toResponse)
                  .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public VulnerabilityStatsResponse getVulnerabilityStats(Long userId) {
+
+        Object[] stats = vulnerabilityRepository.getVulnerabilityStatsByUser(userId);
+
+        return VulnerabilityStatsResponse.builder()
+                .total(((Number) stats[0]).longValue())
+                .open(((Number) stats[1]).longValue())
+                .closed(((Number) stats[2]).longValue())
+                .notPasrsed(((Number) stats[3]).longValue())
+                .build();
+    }
+
+    @Transactional(readOnly = true)
+    public VulnerabilityStatsResponse getSystemVulnerabilityStats() {
+
+        Object[] stats = vulnerabilityRepository.getSystemVulnerabilityStats();
+
+        return VulnerabilityStatsResponse.builder()
+                .total(((Number) stats[0]).longValue())
+                .open(((Number) stats[1]).longValue())
+                .closed(((Number) stats[2]).longValue())
+                .notPasrsed(((Number) stats[3]).longValue())
+                .build();
+    }
+    @Transactional(readOnly = true)
+    public List<CweStatsResponse> getCweStats() {
+
+        return vulnerabilityRepository.getCweStats(NewOrRepeat.NEW)
+                .stream()
+                .map(row -> CweStatsResponse.builder()
+                        .cwe((String) row[0])
+                        .count(((Number) row[1]).longValue())
+                        .build())
+                .toList();
+    }
+    @Transactional(readOnly = true)
+    public List<CweStatsResponse> getApplicationCweStats(Long applicationId) {
+
+        return vulnerabilityRepository
+                .getApplicationCweStats(applicationId, NewOrRepeat.NEW)
+                .stream()
+                .map(row -> CweStatsResponse.builder()
+                        .cwe((String) row[0])
+                        .count(((Number) row[1]).longValue())
+                        .build())
+                .toList();
+    }
+    @Transactional(readOnly = true)
+    public List<CweStatsResponse> getAuditCweStats(Long auditId) {
+
+        return vulnerabilityRepository
+                .getAuditCweStats(auditId, NewOrRepeat.NEW)
+                .stream()
+                .map(row -> CweStatsResponse.builder()
+                        .cwe((String) row[0])
+                        .count(((Number) row[1]).longValue())
+                        .build())
+                .toList();
+    }
+    @Transactional(readOnly = true)
+    public List<CweStatsResponse> getPhaseCweStats(Long phaseId) {
+
+        return vulnerabilityRepository
+                .getPhaseCweStats(phaseId, NewOrRepeat.NEW)
+                .stream()
+                .map(row -> CweStatsResponse.builder()
+                        .cwe((String) row[0])
+                        .count(((Number) row[1]).longValue())
+                        .build())
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public VulnerabilityStatsResponse getGlobalSummary() {
+
+        return VulnerabilityStatsMapper.toResponse(
+                vulnerabilityRepository.getSystemSummary()
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public VulnerabilityStatsResponse getApplicationSummary(Long applicationId) {
+
+        return VulnerabilityStatsMapper.toResponse(
+                vulnerabilityRepository.getApplicationSummary(applicationId)
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public VulnerabilityStatsResponse getAuditSummary(Long auditId) {
+
+        return VulnerabilityStatsMapper.toResponse(
+                vulnerabilityRepository.getAuditSummary(auditId)
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public VulnerabilityStatsResponse getPhaseSummary(Long phaseId) {
+
+        return VulnerabilityStatsMapper.toResponse(
+                vulnerabilityRepository.getPhaseSummary(phaseId)
+        );
     }
 }

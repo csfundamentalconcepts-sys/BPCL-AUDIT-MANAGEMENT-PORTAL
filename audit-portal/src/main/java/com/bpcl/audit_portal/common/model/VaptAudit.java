@@ -25,9 +25,6 @@ public class VaptAudit {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "audit_year", nullable = false)
-    private Integer auditYear;
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "vapt_card_id", nullable = false)
     private VaptCard vaptCard;

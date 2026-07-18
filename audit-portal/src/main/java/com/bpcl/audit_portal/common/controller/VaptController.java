@@ -126,6 +126,85 @@ public class VaptController {
           return ResponseEntity.ok(response);
     }
 
+    @GetMapping("/vulnerabilities/stats")
+    public ResponseEntity<VulnerabilityStatsResponse> VulnerabilityStatsByUser(
+            @AuthenticationPrincipal UserDetailsImplementation currentUser) {
+
+        return ResponseEntity.ok(
+                vaptService.getVulnerabilityStats(currentUser.getId())
+        );
+    }
+    @GetMapping("/users/{userId}/vulnerabilities/stats")
+    public ResponseEntity<VulnerabilityStatsResponse> vulnerabilityStatsByUserId(
+            @PathVariable Long userId) {
+
+        return ResponseEntity.ok(
+                vaptService.getVulnerabilityStats(userId)
+        );
+    }
+    @GetMapping("/vulnerabilities/cwe-stats")
+    public ResponseEntity<List<CweStatsResponse>> getCweStats() {
+        return ResponseEntity.ok(vaptService.getCweStats());
+    }
+    @GetMapping("/applications/{applicationId}/cwe-stats")
+    public ResponseEntity<List<CweStatsResponse>> getApplicationCweStats(
+            @PathVariable Long applicationId) {
+
+        return ResponseEntity.ok(
+                vaptService.getApplicationCweStats(applicationId)
+        );
+    }
+    @GetMapping("/audits/{auditId}/cwe-stats")
+    public ResponseEntity<List<CweStatsResponse>> getAuditCweStats(
+            @PathVariable Long auditId) {
+
+        return ResponseEntity.ok(
+                vaptService.getAuditCweStats(auditId)
+        );
+    }
+    @GetMapping("/phases/{phaseId}/cwe-stats")
+    public ResponseEntity<List<CweStatsResponse>> getPhaseCweStats(
+            @PathVariable Long phaseId) {
+
+        return ResponseEntity.ok(
+                vaptService.getPhaseCweStats(phaseId)
+        );
+    }
+    @GetMapping("/summary")
+    public ResponseEntity<VulnerabilityStatsResponse> SystemSummary() {
+
+        return ResponseEntity.ok(
+                vaptService.getGlobalSummary()
+        );
+    }
+
+    @GetMapping("/applications/{applicationId}/summary")
+    public ResponseEntity<VulnerabilityStatsResponse> applicationSummary(
+            @PathVariable Long applicationId) {
+
+        return ResponseEntity.ok(
+                vaptService.getApplicationSummary(applicationId)
+        );
+    }
+
+    @GetMapping("/audits/{auditId}/summary")
+    public ResponseEntity<VulnerabilityStatsResponse> auditSummary(
+            @PathVariable Long auditId) {
+
+        return ResponseEntity.ok(
+                vaptService.getAuditSummary(auditId)
+        );
+    }
+
+    @GetMapping("/phases/{phaseId}/summary")
+    public ResponseEntity<VulnerabilityStatsResponse> phaseSummary(
+            @PathVariable Long phaseId) {
+
+        return ResponseEntity.ok(
+                vaptService.getPhaseSummary(phaseId)
+        );
+    }
+
 //    @PatchMapping("/audit/{vulnerabilityId}/vulnerability")
 //    public ResponseEntity<?> updateVulnerabilities(@PathVariable Long vulnerabilityId, @RequestBody VulnerabilityUpdateRequest request,@AuthenticationPrincipal UserDetailsImplementation userDetails) {
 //
