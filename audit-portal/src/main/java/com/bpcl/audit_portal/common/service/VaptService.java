@@ -1,7 +1,5 @@
 package com.bpcl.audit_portal.common.service;
-import com.bpcl.audit_portal.common.constants.NewOrRepeat;
-import com.bpcl.audit_portal.common.constants.VaptAuditStatus;
-import com.bpcl.audit_portal.common.constants.VaptPhaseStatus;
+import com.bpcl.audit_portal.common.constants.*;
 import com.bpcl.audit_portal.common.dto.*;
 import com.bpcl.audit_portal.common.exceptions.BAMPException;
 import com.bpcl.audit_portal.common.exceptions.Errors;
@@ -257,10 +255,6 @@ public class VaptService {
                 .toList();
     }
 
-//    public VulnerabilityResponse updateVulnerability(Long vulnerabilityId, AppRole role, VulnerabilityUpdateRequest request) {
-//
-//    }
-
     @Transactional(readOnly = true)
     public List<VaptAuditPhaseResponse> getPhase(Long auditId) {
          if(!vaptAuditRepository.existsById(auditId)){
@@ -375,5 +369,105 @@ public class VaptService {
         return VulnerabilityStatsMapper.toResponse(
                 vulnerabilityRepository.getPhaseSummary(phaseId)
         );
+    }
+    @Transactional
+    public VulnerabilityResponse updateVulnerability(
+            Long vulnerabilityId,
+            VulnerabilityUpdateRequest request) {
+
+        Vulnerability vulnerability = vulnerabilityRepository.findById(vulnerabilityId)
+                .orElseThrow(() ->
+                        new RuntimeException("Vulnerability not found"));
+
+        if (request.getVulnerabilityId() != null) {
+            vulnerability.setVulnerabilityId(request.getVulnerabilityId());
+        }
+
+        if (request.getAffectedAsset() != null) {
+            vulnerability.setAffectedAsset(request.getAffectedAsset());
+        }
+
+        if (request.getName() != null) {
+            vulnerability.setName(request.getName());
+        }
+
+        if (request.getDetailedObservation() != null) {
+            vulnerability.setDetailedObservation(request.getDetailedObservation());
+        }
+
+        if (request.getCveCwe() != null) {
+            vulnerability.setCveCwe(request.getCveCwe());
+        }
+
+        if (request.getCvss() != null) {
+            vulnerability.setCvss(request.getCvss());
+        }
+
+        if (request.getEpss() != null) {
+            vulnerability.setEpss(request.getEpss());
+        }
+
+        if (request.getSeverity() != null) {
+            vulnerability.setSeverity(request.getSeverity());
+        }
+
+        if (request.getStatus() != null) {
+            vulnerability.setStatus(request.getStatus());
+        }
+
+        if (request.getVulnerabilityStatusByUser() != null) {
+            vulnerability.setVulnerabilityStatusByUser(
+                    request.getVulnerabilityStatusByUser());
+        }
+
+        if (request.getRecommendation() != null) {
+            vulnerability.setRecommendation(request.getRecommendation());
+        }
+
+        if (request.getReference() != null) {
+            vulnerability.setReference(request.getReference());
+        }
+
+        if (request.getNewOrRepeat() != null) {
+            vulnerability.setNewOrRepeat(request.getNewOrRepeat());
+        }
+
+        vulnerabilityRepository.save(vulnerability);
+
+        return VulnerabilityMapper.toResponse(vulnerability);
+    }
+
+    @Transactional
+    public void closePhase(Long phaseId) {
+        VaptAuditPhase phase = vaptAuditPhaseRepository.findById(phaseId).orElseThrow(() -> new BAMPException(Errors.VAPT_PHASE_NOT_FOUND));
+        long pending = vulnerabilityRepository.countOpenNotFixedVulnerabilities(
+                phaseId,
+                VulnerabilityStatus.OPEN,
+                VulnerabilityStatusByUser.FIXED
+        );
+        if (pending > 0) {
+            throw new BAMPException(Errors.VAPT_PHASE_CANNOT_BE_CLOSED);
+        }
+        phase.setStatus(VaptPhaseStatus.CLOSED);
+        vaptAuditPhaseRepository.save(phase);
+    }
+
+    @Transactional
+    public void closeAudit(Long auditId) {
+
+        VaptAudit audit = vaptAuditRepository.findById(auditId).orElseThrow(() -> new BAMPException(Errors.VAPT_AUDIT_NOT_FOUND));
+
+        VaptAuditPhase lastPhase = vaptAuditPhaseRepository.findTopByVaptAudit_IdOrderByPhaseNumberDesc(auditId).orElseThrow(() -> new BAMPException(Errors.VAPT_PHASE_NOT_FOUND));
+
+        long remaining = vulnerabilityRepository.countNonClosedVulnerabilities(
+                lastPhase.getId(),
+                VulnerabilityStatus.CLOSED
+        );
+        if (remaining > 0) {
+
+            throw new BAMPException(Errors.VAPT_AUDIT_CANNOT_BE_CLOSED);
+        }
+        audit.setStatus(VaptAuditStatus.CLOSED);
+        vaptAuditRepository.save(audit);
     }
 }
