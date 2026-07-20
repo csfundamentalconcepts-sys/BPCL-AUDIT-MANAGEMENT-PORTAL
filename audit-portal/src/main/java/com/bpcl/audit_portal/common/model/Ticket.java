@@ -23,7 +23,7 @@ public class Ticket {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false,length = 200)
+    @Column(nullable = false, length = 200)
     private String title;
 
     @Enumerated(EnumType.STRING)
@@ -34,11 +34,8 @@ public class Ticket {
     private String description;
 
     private String startDate;
-
     private String targetDate;
-
     private String actualCompletionDate;
-
     private String deploymentDate;
 
     private Integer storyPoint;
@@ -46,10 +43,6 @@ public class Ticket {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by", nullable = false, updatable = false)
     private User createdBy;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "assigned_to")
-    private User assignedTo;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "application_id", nullable = false)
@@ -63,10 +56,7 @@ public class Ticket {
     @Column(nullable = false)
     private TicketType type;
 
-    @Column(name = "head_comment")
     private String headComment;
-
-    @Column(name = "spoc_comment")
     private String spocComment;
 
     @CreationTimestamp

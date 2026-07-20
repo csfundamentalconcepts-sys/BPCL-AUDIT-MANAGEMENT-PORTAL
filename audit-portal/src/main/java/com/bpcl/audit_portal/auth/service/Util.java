@@ -6,52 +6,82 @@ import com.bpcl.audit_portal.common.exceptions.Errors;
 
 public class Util {
 
-    public static void validateRoleCreation(AppRole creatorRole, AppRole targetRole) {
+    public static void validateRoleCreation(
+            AppRole creatorRole,
+            AppRole targetRole) {
 
         switch (creatorRole) {
+
             case ADMIN -> {
-                if (targetRole != AppRole.HEAD && targetRole != AppRole.ADMIN) {
+                if (targetRole != AppRole.HEAD) {
                     throw new BAMPException(Errors.UNAUTHORIZED);
                 }
             }
+
             case HEAD -> {
-                if (!(targetRole == AppRole.SPOC ||
-                        targetRole == AppRole.DEVELOPER ||
-                        targetRole == AppRole.SCRUM_MASTER)) {
+                if (targetRole != AppRole.SPOC) {
                     throw new BAMPException(Errors.UNAUTHORIZED);
                 }
             }
+
             case SPOC -> {
-                if (!(targetRole == AppRole.DEVELOPER ||
-                        targetRole == AppRole.SCRUM_MASTER)) {
+                if (targetRole != AppRole.SCRUM_MASTER) {
                     throw new BAMPException(Errors.UNAUTHORIZED);
                 }
             }
+
+            case SCRUM_MASTER -> {
+                if (targetRole != AppRole.DEVELOPER) {
+                    throw new BAMPException(Errors.UNAUTHORIZED);
+                }
+            }
+
             default -> throw new BAMPException(Errors.UNAUTHORIZED);
         }
     }
+    public static void validateUserAssignment(
+            AppRole parentRole,
+            AppRole childRole
+    ) {
 
-    public static void validateAssignment(AppRole targetRole, AppRole assignedToRole) {
+        switch (parentRole) {
 
-        switch (targetRole) {
+            case ADMIN -> {
+                if (childRole != AppRole.HEAD) {
+                    throw new BAMPException(
+                            Errors.INVALID_USER_HIERARCHY
+                    );
+                }
+            }
+
             case HEAD -> {
-                if (assignedToRole != AppRole.ADMIN) {
-                    throw new BAMPException(Errors.INVALID_ASSIGNMENT);
+                if (childRole != AppRole.SPOC) {
+                    throw new BAMPException(
+                            Errors.INVALID_USER_HIERARCHY
+                    );
                 }
             }
+
             case SPOC -> {
-                if (assignedToRole != AppRole.HEAD) {
-                    throw new BAMPException(Errors.INVALID_ASSIGNMENT);
+                if (childRole != AppRole.SCRUM_MASTER) {
+                    throw new BAMPException(
+                            Errors.INVALID_USER_HIERARCHY
+                    );
                 }
             }
-            case DEVELOPER, SCRUM_MASTER -> {
-                if (!(assignedToRole == AppRole.HEAD ||
-                        assignedToRole == AppRole.SPOC)) {
-                    throw new BAMPException(Errors.INVALID_ASSIGNMENT);
+
+            case SCRUM_MASTER -> {
+                if (childRole != AppRole.DEVELOPER) {
+                    throw new BAMPException(
+                            Errors.INVALID_USER_HIERARCHY
+                    );
                 }
             }
-            default -> throw new BAMPException(Errors.INVALID_ASSIGNMENT);
+
+            default ->
+                    throw new BAMPException(
+                            Errors.INVALID_USER_HIERARCHY
+                    );
         }
     }
-
 }

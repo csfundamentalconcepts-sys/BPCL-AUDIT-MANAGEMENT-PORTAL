@@ -19,5 +19,4 @@ public class UserDto {
 
     private String role;
 
-    private List<Long> applicationIds;
 }

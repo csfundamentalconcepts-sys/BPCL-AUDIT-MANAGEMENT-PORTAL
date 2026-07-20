@@ -8,37 +8,33 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.time.LocalDate;
-
 @Getter
 @Setter
 public class CreateTicketRequest {
 
-    @NotBlank
+    @NotBlank(message = "Title is mandatory")
     private String title;
 
-    @NotBlank
+    @NotBlank(message = "Description is mandatory")
     private String description;
 
-    private String assignedTo;
+
+    private Long assignedToId;
 
     private String startDate;
-
     private String targetDate;
-
     private String actualCompletionDate;
-
     private String deploymentDate;
 
     private Integer storyPoint;
 
-    @NotNull
+    @NotNull(message = "Application ID is mandatory")
     private Long applicationId;
 
     private TicketStatus status;
 
     private TicketType type;
 
+    @NotNull(message = "Priority is mandatory")
     private Priority priority;
-
 }

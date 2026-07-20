@@ -109,7 +109,34 @@ public enum Errors {
             "All OPEN vulnerabilities must be FIXED before closing phase."),
 
     VAPT_AUDIT_CANNOT_BE_CLOSED(HttpStatus.BAD_REQUEST, 1035L,
-            "All vulnerabilities of the last phase must be CLOSED before closing the audit.");;
+            "All vulnerabilities of the last phase must be CLOSED before closing the audit."),
+
+    USER_ALREADY_ASSIGNED(HttpStatus.CONFLICT, 1036L,
+            "User is already assigned."),
+
+    USER_ASSIGNMENT_NOT_FOUND(HttpStatus.NOT_FOUND, 1037L,
+            "User assignment not found."),
+
+    INVALID_USER_HIERARCHY(HttpStatus.BAD_REQUEST, 1038L,
+            "Invalid hierarchy assignment."
+    ),
+    APPLICATION_ALREADY_ASSIGNED(HttpStatus.CONFLICT, 1039L,
+                "Application already assigned."
+    ),
+    APPLICATION_NOT_ASSIGNED(HttpStatus.BAD_REQUEST, 1040L,
+                "Application is not assigned."
+    ),
+    INVALID_VULNERABILITY_ASSIGNMENT(
+            HttpStatus.BAD_REQUEST,
+            1034L,
+            "Only Scrum Master can assign vulnerabilities to developers."
+    ),
+
+    INVALID_TICKET_ASSIGNMENT(
+            HttpStatus.BAD_REQUEST,
+            1035L,
+            "Only Scrum Master can assign tickets to developers."
+    );
 
     private final HttpStatus httpStatus;
     private final Long errorCode;

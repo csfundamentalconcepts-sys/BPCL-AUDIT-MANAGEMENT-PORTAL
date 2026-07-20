@@ -23,7 +23,7 @@ public class ApplicationController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('SPOC','HEAD','ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ApplicationResponse createApplication(
             @RequestBody CreateApplicationRequest request,
             @AuthenticationPrincipal UserDetailsImplementation userDetails
@@ -35,18 +35,48 @@ public class ApplicationController {
         );
     }
 
-    @GetMapping("/assigned")
-    public List<ApplicationResponse> getAllAssignedApplications(
-            @AuthenticationPrincipal UserDetailsImplementation userDetails
+    @PostMapping("/{applicationId}/assign/{userId}")
+    public void assignApplication(
+            @PathVariable Long applicationId,
+            @PathVariable Long userId,
+            @AuthenticationPrincipal UserDetailsImplementation currentUser
     ) {
-        return applicationService.getAllAssignedApplications(
-                userDetails.getId()
+
+        applicationService.assignApplication(
+                applicationId,
+                userId,
+                currentUser.getId()
         );
     }
-    @GetMapping("/assigned")
-    @PreAuthorize("hasAnyRole('ADMIN')")
-    public List<ApplicationResponse> getAllApplications() {
-        return applicationService.getAllApplications();
+
+    @DeleteMapping("/{applicationId}/de-assign/{userId}")
+    public void deassignApplication(
+            @PathVariable Long applicationId,
+            @PathVariable Long userId,
+            @AuthenticationPrincipal UserDetailsImplementation currentUser
+    ) {
+
+        applicationService.deassignApplication(
+                applicationId,
+                userId,
+                currentUser.getId()
+        );
     }
 
+    @GetMapping("/assigned")
+    public List<ApplicationResponse> getAssignedApplications(
+            @AuthenticationPrincipal UserDetailsImplementation currentUser
+    ) {
+
+        return applicationService.getAssignedApplications(
+                currentUser.getId()
+        );
+    }
+
+    @GetMapping
+    @PreAuthorize("hasRole('ADMIN')")
+    public List<ApplicationResponse> getAllApplications() {
+
+        return applicationService.getAllApplications();
+    }
 }

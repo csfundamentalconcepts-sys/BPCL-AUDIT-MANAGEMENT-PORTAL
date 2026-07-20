@@ -51,27 +51,10 @@ public class User {
     @JoinColumn(name = "role_id")
     private Role role;
 
-    @Builder.Default
-    @ManyToMany(fetch = FetchType.LAZY)
-    @JoinTable(
-            name = "user_applications",
-            joinColumns = @JoinColumn(name = "user_id"),
-            inverseJoinColumns = @JoinColumn(name = "application_id")
-    )
-    private List<Application> applications = new ArrayList<>();
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by")
     @JsonIgnore
     private User createdBy;
-
-    @ManyToMany
-    @JoinTable(
-            name = "user_assignments",
-            joinColumns = @JoinColumn(name = "user_id"),
-            inverseJoinColumns = @JoinColumn(name = "assigned_to_user_id")
-    )
-    private List<User> assignedToUsers = new ArrayList<>();
 
     @Builder.Default
     @Column(name = "log_out")
