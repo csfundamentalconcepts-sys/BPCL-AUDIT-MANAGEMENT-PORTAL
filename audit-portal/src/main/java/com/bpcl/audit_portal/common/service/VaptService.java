@@ -294,7 +294,7 @@ public class VaptService {
     @Transactional(readOnly = true)
     public List<CweStatsResponse> getCweStats() {
 
-        return vulnerabilityRepository.getCweStats(NewOrRepeat.NEW)
+        return vulnerabilityRepository.getCweStats(NewOrRepeat.NEW,VulnerabilityStatus.OPEN)
                 .stream()
                 .map(row -> CweStatsResponse.builder()
                         .cwe((String) row[0])
@@ -306,7 +306,7 @@ public class VaptService {
     public List<CweStatsResponse> getApplicationCweStats(Long applicationId) {
 
         return vulnerabilityRepository
-                .getApplicationCweStats(applicationId, NewOrRepeat.NEW)
+                .getApplicationCweStats(applicationId, NewOrRepeat.NEW,VulnerabilityStatus.OPEN)
                 .stream()
                 .map(row -> CweStatsResponse.builder()
                         .cwe((String) row[0])
@@ -318,7 +318,7 @@ public class VaptService {
     public List<CweStatsResponse> getAuditCweStats(Long auditId) {
 
         return vulnerabilityRepository
-                .getAuditCweStats(auditId, NewOrRepeat.NEW)
+                .getAuditCweStats(auditId, NewOrRepeat.NEW,VulnerabilityStatus.OPEN)
                 .stream()
                 .map(row -> CweStatsResponse.builder()
                         .cwe((String) row[0])
@@ -330,7 +330,7 @@ public class VaptService {
     public List<CweStatsResponse> getPhaseCweStats(Long phaseId) {
 
         return vulnerabilityRepository
-                .getPhaseCweStats(phaseId, NewOrRepeat.NEW)
+                .getPhaseCweStats(phaseId, NewOrRepeat.NEW,VulnerabilityStatus.OPEN)
                 .stream()
                 .map(row -> CweStatsResponse.builder()
                         .cwe((String) row[0])

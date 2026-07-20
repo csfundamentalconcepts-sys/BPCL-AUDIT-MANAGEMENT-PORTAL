@@ -4,15 +4,16 @@ import com.bpcl.audit_portal.common.constants.AppRole;
 import com.bpcl.audit_portal.common.constants.Priority;
 import com.bpcl.audit_portal.common.constants.TicketStatus;
 import com.bpcl.audit_portal.common.constants.TicketType;
+import com.bpcl.audit_portal.common.dto.*;
 import com.bpcl.audit_portal.common.exceptions.BAMPException;
 import com.bpcl.audit_portal.common.exceptions.Errors;
 import com.bpcl.audit_portal.common.mapper.TicketDtoMapper;
-import com.bpcl.audit_portal.common.mapper.UserDtoMapper;
-import org.springframework.stereotype.Service;
-import com.bpcl.audit_portal.common.dto.*;
 import com.bpcl.audit_portal.common.model.*;
 import com.bpcl.audit_portal.common.repository.*;
+import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -20,73 +21,115 @@ import java.util.List;
 public class TicketService {
 
     private final TicketRepository ticketRepository;
+    private final TicketAssignmentRepository assignmentRepository;
     private final TicketHistoryRepository historyRepository;
     private final ApplicationRepository applicationRepository;
     private final UserRepository userRepository;
-    private final UserDtoMapper userDtoMapper;
 
-    public TicketService(TicketRepository ticketRepository, TicketHistoryRepository historyRepository, ApplicationRepository applicationRepository, UserRepository userRepository, UserDtoMapper userDtoMapper) {
+    public TicketService(TicketRepository ticketRepository,
+                         TicketAssignmentRepository assignmentRepository,
+                         TicketHistoryRepository historyRepository,
+                         ApplicationRepository applicationRepository,
+                         UserRepository userRepository) {
         this.ticketRepository = ticketRepository;
+        this.assignmentRepository = assignmentRepository;
         this.historyRepository = historyRepository;
         this.applicationRepository = applicationRepository;
         this.userRepository = userRepository;
-        this.userDtoMapper = userDtoMapper;
     }
-
-    public TicketResponse createTicket(CreateTicketRequest request, Long id) {
-
+    public TicketResponse createTicket(CreateTicketRequest request, Long currentUserId) {
         Application application = applicationRepository.findById(request.getApplicationId())
                 .orElseThrow(() -> new BAMPException(Errors.APPLICATION_NOT_FOUND));
 
-        User currentUser = userRepository.findById(id)
+        User currentUser = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new BAMPException(Errors.USER_NOT_FOUND));
-
-        if (request.getDescription() == null || request.getDescription().isBlank()) {
-            throw new BAMPException(Errors.MANDATORY_FIELD_MISSING);
-        }
 
         Ticket ticket = Ticket.builder()
                 .title(request.getTitle())
                 .description(request.getDescription())
-                .assignedTo(request.getAssignedTo())
+                .priority(request.getPriority())
+                .status(request.getStatus() != null ? request.getStatus() : TicketStatus.NOT_STARTED)
+                .type(request.getType())
                 .startDate(request.getStartDate())
                 .targetDate(request.getTargetDate())
                 .actualCompletionDate(request.getActualCompletionDate())
                 .deploymentDate(request.getDeploymentDate())
                 .storyPoint(request.getStoryPoint())
-                .status(request.getStatus())
-                .type(request.getType())
-                .priority(request.getPriority())
                 .application(application)
                 .createdBy(currentUser)
                 .build();
 
         Ticket savedTicket = ticketRepository.save(ticket);
+        if (request.getAssignedToId() != null) {
+            assignTicketInternal(savedTicket.getId(), request.getAssignedToId(), currentUserId);
+        }
 
-        return TicketDtoMapper.toDto(
-                savedTicket
-        );
+        return TicketDtoMapper.toDto(savedTicket);
     }
 
-    public TicketResponse updateTicket(Long ticketId,Long id,AppRole role, UpdateTicketRequest request) {
-
+    public void assignTicket(Long ticketId, Long assignedToId, Long currentUserId) {
         Ticket ticket = ticketRepository.findById(ticketId)
                 .orElseThrow(() -> new BAMPException(Errors.TICKET_NOT_FOUND));
 
-        User currentUser = userRepository.findById(id)
+        User assignedTo = userRepository.findById(assignedToId)
                 .orElseThrow(() -> new BAMPException(Errors.USER_NOT_FOUND));
 
-        for (FieldUpdateRequest update : request.getUpdates()) {
+        User assignedBy = userRepository.findById(currentUserId)
+                .orElseThrow(() -> new BAMPException(Errors.USER_NOT_FOUND));
 
+        assignmentRepository.findByTicketIdAndActiveTrue(ticketId)
+                .ifPresent(oldAssignment -> {
+                    oldAssignment.setActive(false);
+                    oldAssignment.setDeassignedAt(LocalDateTime.now());
+                    oldAssignment.setDeassignedBy(assignedBy);
+                });
+
+        TicketAssignment newAssignment = TicketAssignment.builder()
+                .ticket(ticket)
+                .assignedTo(assignedTo)
+                .assignedBy(assignedBy)
+                .active(true)
+                .build();
+
+        assignmentRepository.save(newAssignment);
+    }
+
+    private void assignTicketInternal(Long ticketId, Long assignedToId, Long currentUserId) {
+        assignTicket(ticketId, assignedToId, currentUserId);
+    }
+
+    public void deassignTicket(Long ticketId, Long currentUserId) {
+        TicketAssignment assignment = assignmentRepository.findByTicketIdAndActiveTrue(ticketId)
+                .orElseThrow(() -> new BAMPException(Errors.TICKET_NOT_ASSIGNED));
+
+        User deassignedBy = userRepository.findById(currentUserId)
+                .orElseThrow(() -> new BAMPException(Errors.USER_NOT_FOUND));
+
+        assignment.setActive(false);
+        assignment.setDeassignedAt(LocalDateTime.now());
+        assignment.setDeassignedBy(deassignedBy);
+
+        assignmentRepository.save(assignment);
+    }
+
+    public TicketResponse updateTicket(Long ticketId, Long currentUserId, UpdateTicketRequest request) {
+        Ticket ticket = ticketRepository.findById(ticketId)
+                .orElseThrow(() -> new BAMPException(Errors.TICKET_NOT_FOUND));
+
+        User currentUser = userRepository.findById(currentUserId)
+                .orElseThrow(() -> new BAMPException(Errors.USER_NOT_FOUND));
+
+        boolean isAssignedToUser = assignmentRepository.existsByTicketIdAndAssignedToIdAndActiveTrue(ticketId, currentUserId);
+
+        for (FieldUpdateRequest update : request.getUpdates()) {
             String fieldName = update.getFieldName();
             String newValue = update.getNewValue();
             String oldValue = null;
 
             switch (fieldName) {
-
-                case "description" -> {
-                    oldValue = ticket.getDescription();
-                    ticket.setDescription(newValue);
+                case "status" -> {
+                    oldValue = ticket.getStatus() != null ? ticket.getStatus().name() : null;
+                    ticket.setStatus(TicketStatus.valueOf(newValue));
                 }
 
                 case "title" -> {
@@ -94,25 +137,14 @@ public class TicketService {
                     ticket.setTitle(newValue);
                 }
 
-                case "priority" -> {
-                    oldValue = ticket.getPriority()!=null ? ticket.getPriority().name() : null;
-
-                    Boolean validPriority = false;
-                    for (Priority priority : Priority.values()) {
-                        if (priority.name().equals(newValue)) {
-                            validPriority = true;
-                            break;
-                        }
-                    }
-                    if (!validPriority) {
-                        throw new BAMPException(Errors.INVALID_PRIORITY);
-                    }
-                    ticket.setPriority(Priority.valueOf(newValue));
+                case "description" -> {
+                    oldValue = ticket.getDescription();
+                    ticket.setDescription(newValue);
                 }
 
-                case "assignedTo" -> {
-                    oldValue = ticket.getAssignedTo();
-                    ticket.setAssignedTo(newValue);
+                case "priority" -> {
+                    oldValue = ticket.getPriority() != null ? ticket.getPriority().name() : null;
+                    ticket.setPriority(Priority.valueOf(newValue));
                 }
 
                 case "startDate" -> {
@@ -136,91 +168,16 @@ public class TicketService {
                 }
 
                 case "storyPoint" -> {
-
-                    oldValue = ticket.getStoryPoint() != null
-                            ? ticket.getStoryPoint().toString()
-                            : null;
-
-                    if (newValue == null || newValue.isBlank()) {
-                        throw new BAMPException(Errors.INVALID_STORY_POINT);
-                    }
-
-                    boolean validStoryPoint = true;
-
-                    for (char ch : newValue.toCharArray()) {
-                        if (!Character.isDigit(ch)) {
-                            validStoryPoint = false;
-                            break;
-                        }
-                    }
-
-                    if (!validStoryPoint) {
-                        throw new BAMPException(Errors.INVALID_STORY_POINT);
-                    }
-
-                    ticket.setStoryPoint(Integer.parseInt(newValue));
-                }
-
-                case "status" -> {
-
-                    oldValue = ticket.getStatus() != null
-                            ? ticket.getStatus().name()
-                            : null;
-
-                    boolean validStatus = false;
-
-                    for (TicketStatus status : TicketStatus.values()) {
-                        if (status.name().equals(newValue)) {
-                            validStatus = true;
-                            break;
-                        }
-                    }
-
-                    if (!validStatus) {
-                        throw new BAMPException(Errors.INVALID_STATUS);
-                    }
-
-                    ticket.setStatus(TicketStatus.valueOf(newValue));
-                }
-
-                case "type" -> {
-
-                    oldValue = ticket.getType() != null
-                            ? ticket.getType().name()
-                            : null;
-
-                    boolean validType = false;
-
-                    for (TicketType type : TicketType.values()) {
-                        if (type.name().equals(newValue)) {
-                            validType = true;
-                            break;
-                        }
-                    }
-
-                    if (!validType) {
-                        throw new BAMPException(Errors.INVALID_TYPE);
-                    }
-
-                    ticket.setType(TicketType.valueOf(newValue));
+                    oldValue = ticket.getStoryPoint() != null ? ticket.getStoryPoint().toString() : null;
+                    ticket.setStoryPoint(newValue != null && !newValue.isBlank() ? Integer.parseInt(newValue) : null);
                 }
 
                 case "headComment" -> {
-
-                    if (role != AppRole.HEAD) {
-                        throw new BAMPException(Errors.UNAUTHORIZED);
-                    }
-
                     oldValue = ticket.getHeadComment();
                     ticket.setHeadComment(newValue);
                 }
 
                 case "spocComment" -> {
-
-                    if (role != AppRole.SPOC) {
-                        throw new BAMPException(Errors.UNAUTHORIZED);
-                    }
-
                     oldValue = ticket.getSpocComment();
                     ticket.setSpocComment(newValue);
                 }
@@ -238,8 +195,8 @@ public class TicketService {
 
             historyRepository.save(history);
         }
-        Ticket updatedTicket = ticketRepository.save(ticket);
 
+        Ticket updatedTicket = ticketRepository.save(ticket);
         return TicketDtoMapper.toDto(updatedTicket);
     }
 
@@ -247,103 +204,48 @@ public class TicketService {
     public List<TicketResponse> getTicketsByApplication(Long applicationId) {
         return ticketRepository.findByApplicationIdOrdered(applicationId)
                 .stream()
-                .map(ticket -> {
-                    List<TicketHistory> histories = historyRepository.findByTicketIdOrderByUpdatedAtDesc(ticket.getId());
-                    return TicketDtoMapper.toDto(ticket);
-                })
+                .map(TicketDtoMapper::toDto)
                 .toList();
     }
-    @Transactional(readOnly = true)
-    public TicketSummaryResponse getTicketSummaryByApplication(Long applicationId) {
 
-        return TicketSummaryResponse.builder()
-                .totalTickets(
-                        ticketRepository.countByApplicationId(applicationId)
-                )
-                .inProgressTickets(
-                        ticketRepository.countByApplicationIdAndStatus(
-                                applicationId,
-                                TicketStatus.IN_PROGRESS
-                        )
-                )
-                .notStartedTickets(
-                        ticketRepository.countByApplicationIdAndStatus(
-                                applicationId,
-                                TicketStatus.NOT_STARTED
-                        )
-                )
-                .holdTickets(
-                        ticketRepository.countByApplicationIdAndStatus(
-                                applicationId,
-                                TicketStatus.HOLD
-                        )
-                )
-                .closedTickets(
-                        ticketRepository.countByApplicationIdAndStatus(
-                                applicationId,
-                                TicketStatus.CLOSED
-                        )
-                )
-                .build();
-    }
-    @Transactional(readOnly = true)
-    public TicketSummaryResponse getTicketSummary() {
-
-        return TicketSummaryResponse.builder()
-                .totalTickets(ticketRepository.count())
-                .inProgressTickets(
-                        ticketRepository.countByStatus(TicketStatus.IN_PROGRESS)
-                )
-                .notStartedTickets(
-                        ticketRepository.countByStatus(TicketStatus.NOT_STARTED)
-                )
-                .holdTickets(
-                        ticketRepository.countByStatus(TicketStatus.HOLD)
-                )
-                .closedTickets(
-                        ticketRepository.countByStatus(TicketStatus.CLOSED)
-                )
-                .build();
-    }
-    @Transactional(readOnly = true)
-    public TicketSummaryResponse getTicketSummaryByUser(Long userId) {
-
-        return TicketSummaryResponse.builder()
-                .totalTickets(
-                        ticketRepository.countByAssignedToId(userId)
-                )
-                .inProgressTickets(
-                        ticketRepository.countByAssignedToIdAndStatus(
-                                userId,
-                                TicketStatus.IN_PROGRESS
-                        )
-                )
-                .notStartedTickets(
-                        ticketRepository.countByAssignedToIdAndStatus(
-                                userId,
-                                TicketStatus.NOT_STARTED
-                        )
-                )
-                .holdTickets(
-                        ticketRepository.countByAssignedToIdAndStatus(
-                                userId,
-                                TicketStatus.HOLD
-                        )
-                )
-                .closedTickets(
-                        ticketRepository.countByAssignedToIdAndStatus(
-                                userId,
-                                TicketStatus.CLOSED
-                        )
-                )
-                .build();
-    }
     @Transactional(readOnly = true)
     public List<TicketResponse> getTicketsByUser(Long userId) {
-
         return ticketRepository.findByAssignedToIdOrderByUpdatedAtDesc(userId)
                 .stream()
                 .map(TicketDtoMapper::toDto)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public TicketSummaryResponse getTicketSummaryByApplication(Long applicationId) {
+        return TicketSummaryResponse.builder()
+                .totalTickets(ticketRepository.countByApplicationId(applicationId))
+                .inProgressTickets(ticketRepository.countByApplicationIdAndStatus(applicationId, TicketStatus.IN_PROGRESS))
+                .notStartedTickets(ticketRepository.countByApplicationIdAndStatus(applicationId, TicketStatus.NOT_STARTED))
+                .holdTickets(ticketRepository.countByApplicationIdAndStatus(applicationId, TicketStatus.HOLD))
+                .closedTickets(ticketRepository.countByApplicationIdAndStatus(applicationId, TicketStatus.CLOSED))
+                .build();
+    }
+
+    @Transactional(readOnly = true)
+    public TicketSummaryResponse getTicketSummary() {
+        return TicketSummaryResponse.builder()
+                .totalTickets(ticketRepository.count())
+                .inProgressTickets(ticketRepository.countByStatus(TicketStatus.IN_PROGRESS))
+                .notStartedTickets(ticketRepository.countByStatus(TicketStatus.NOT_STARTED))
+                .holdTickets(ticketRepository.countByStatus(TicketStatus.HOLD))
+                .closedTickets(ticketRepository.countByStatus(TicketStatus.CLOSED))
+                .build();
+    }
+
+    @Transactional(readOnly = true)
+    public TicketSummaryResponse getTicketSummaryByUser(Long userId) {
+        return TicketSummaryResponse.builder()
+                .totalTickets(ticketRepository.countByAssignedToId(userId))
+                .inProgressTickets(ticketRepository.countByAssignedToIdAndStatus(userId, TicketStatus.IN_PROGRESS))
+                .notStartedTickets(ticketRepository.countByAssignedToIdAndStatus(userId, TicketStatus.NOT_STARTED))
+                .holdTickets(ticketRepository.countByAssignedToIdAndStatus(userId, TicketStatus.HOLD))
+                .closedTickets(ticketRepository.countByAssignedToIdAndStatus(userId, TicketStatus.CLOSED))
+                .build();
     }
 }

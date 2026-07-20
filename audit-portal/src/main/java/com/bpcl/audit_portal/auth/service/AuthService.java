@@ -14,8 +14,10 @@ import com.bpcl.audit_portal.common.mapper.UserDtoMapper;
 import com.bpcl.audit_portal.common.model.Application;
 import com.bpcl.audit_portal.common.model.Role;
 import com.bpcl.audit_portal.common.model.User;
+import com.bpcl.audit_portal.common.model.UserAssignment;
 import com.bpcl.audit_portal.common.repository.ApplicationRepository;
 import com.bpcl.audit_portal.common.repository.RoleRepository;
+import com.bpcl.audit_portal.common.repository.UserAssignmentRepository;
 import com.bpcl.audit_portal.common.repository.UserRepository;
 
 import com.bpcl.audit_portal.common.service.UserService;
@@ -39,10 +41,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-import static com.bpcl.audit_portal.auth.service.Util.validateAssignment;
 import static com.bpcl.audit_portal.auth.service.Util.validateRoleCreation;
 import static com.bpcl.audit_portal.common.constants.AppRole.ADMIN;
-import static com.bpcl.audit_portal.common.constants.AppRole.HEAD;
+
 
 @Service
 public class AuthService {
@@ -58,6 +59,8 @@ public class AuthService {
     private final PasswordResetTokenRepository passwordResetTokenRepository;
     private final UserDtoMapper userDtoMapper;
     private final UserService userService;
+    private final UserAssignmentRepository userAssignmentRepository;
+
 
     private static final Logger log =
             LoggerFactory.getLogger(AuthService.class);
@@ -73,7 +76,8 @@ public class AuthService {
             RefreshTokenRepository refreshTokenRepository,
             ApplicationRepository applicationRepository,
             PasswordResetTokenRepository passwordResetTokenRepository,
-            UserDtoMapper userDtoMapper
+            UserDtoMapper userDtoMapper,
+            UserAssignmentRepository userAssignmentRepository
     ) {
         this.refreshTokenService = refreshTokenService;
         this.userRepository = userRepository;
@@ -86,6 +90,7 @@ public class AuthService {
         this.passwordResetTokenRepository = passwordResetTokenRepository;
         this.userDtoMapper = userDtoMapper;
         this.userService = userService;
+        this.userAssignmentRepository = userAssignmentRepository;
     }
 
     @Transactional
@@ -94,7 +99,8 @@ public class AuthService {
             UserDetailsImplementation userDetails
     ) {
 
-        AppRole creatorRole = userDetails.getAuthorities().stream()
+        AppRole creatorRole = userDetails.getAuthorities()
+                .stream()
                 .filter(a -> a.getAuthority().startsWith("ROLE_"))
                 .map(a -> a.getAuthority().replace("ROLE_", ""))
                 .map(AppRole::valueOf)
@@ -110,6 +116,7 @@ public class AuthService {
         if (userRepository.existsByUserName(
                 signUpRequest.getUserName()
         )) {
+
             throw new BAMPException(
                     Errors.USERNAME_ALREADY_IN_USE
             );
@@ -118,80 +125,44 @@ public class AuthService {
         Role role = roleRepository
                 .findByRoleName(signUpRequest.getRole())
                 .orElseThrow(() ->
-                        new BAMPException(Errors.ROLE_NOT_FOUND));
-
-        List<Application> applications = new ArrayList<>();
-
-        if (signUpRequest.getApplicationIds() != null
-                && !signUpRequest.getApplicationIds().isEmpty()) {
-
-            applications = applicationRepository.findAllById(
-                    signUpRequest.getApplicationIds()
-            );
-
-            if (applications.size()
-                    != signUpRequest.getApplicationIds().size()) {
-
-                throw new BAMPException(
-                        Errors.APPLICATION_NOT_FOUND
-                );
-            }
-        }
+                        new BAMPException(
+                                Errors.ROLE_NOT_FOUND
+                        ));
 
         User creator = userRepository.findById(
                         userDetails.getId()
                 )
                 .orElseThrow(() ->
-                        new BAMPException(Errors.USER_NOT_FOUND));
-
-        List<User> assignedToUsers = new ArrayList<>();
-
-        switch (creatorRole) {
-            case ADMIN -> {
-                    if(AppRole.HEAD.equals(role.getRoleName())){
-                        assignedToUsers.addAll( userRepository.findByRole_RoleName(ADMIN));
-                    }
-            }
-            case HEAD -> {
-                assignedToUsers.add(creator);
-
-                assignedToUsers.addAll(
-                        userRepository.findByRole_RoleName(
-                                ADMIN
-                        )
-                );
-            }
-            case SPOC -> {
-                assignedToUsers.add(creator);
-                assignedToUsers.addAll(
-                        creator.getAssignedToUsers()
-                );
-            }
-        }
+                        new BAMPException(
+                                Errors.USER_NOT_FOUND
+                        ));
 
         User user = User.builder()
                 .userName(signUpRequest.getUserName())
                 .fullName(signUpRequest.getFullName())
-                .password(passwordEncoder.encode(
-                        signUpRequest.getPassword()
-                ))
+                .password(
+                        passwordEncoder.encode(
+                                signUpRequest.getPassword()
+                        )
+                )
                 .role(role)
-                .applications(applications)
                 .createdBy(creator)
-                .assignedToUsers(assignedToUsers)
                 .logout(true)
                 .isActive(true)
                 .build();
 
         userRepository.save(user);
-        if (AppRole.ADMIN.equals(role.getRoleName())) {
-            List<User> users = userRepository.getChildUsers(userDetails.getId());
 
-            users.forEach(u -> {
-                u.getAssignedToUsers().add(user);
-                userRepository.save(u);
-            });
-        }
+        UserAssignment assignment =
+                UserAssignment.builder()
+                        .parentUser(creator)
+                        .childUser(user)
+                        .assignedBy(creator)
+                        .active(true)
+                        .build();
+
+        userAssignmentRepository.save(assignment);
+
         return userDtoMapper.toDto(user);
     }
 
