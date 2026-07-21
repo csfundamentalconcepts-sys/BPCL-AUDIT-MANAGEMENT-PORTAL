@@ -1,7 +1,6 @@
 package com.bpcl.audit_portal.common.controller;
 
 import com.bpcl.audit_portal.auth.model.UserDetailsImplementation;
-import com.bpcl.audit_portal.common.constants.AppRole;
 import com.bpcl.audit_portal.common.dto.*;
 import com.bpcl.audit_portal.common.model.VaptAudit;
 import com.bpcl.audit_portal.common.model.VaptCard;
@@ -10,13 +9,13 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import com.bpcl.audit_portal.common.dto.VaptAuditResponse;
 
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/vapt")
 public class VaptController {
+
 
     private final VaptService vaptService;
 
@@ -29,23 +28,11 @@ public class VaptController {
             @RequestBody CreateVaptCardRequest request,
             @AuthenticationPrincipal UserDetailsImplementation currentUser) {
 
-        VaptCard card = vaptService.createVaptCard(
-                request.getApplicationId(),
-                currentUser.getId()
-        );
-
         return ResponseEntity.ok(
-                VaptCardResponse.builder()
-                        .id(card.getId())
-                        .applicationId(card.getApplication().getId())
-                        .auditInfo(
-                                AuditInfoResponse.builder()
-                                        .userId(card.getCreatedBy().getId())
-                                        .username(card.getCreatedBy().getUserName())
-                                        .createdAt(card.getCreatedAt())
-                                        .build()
-                        )
-                        .build()
+                vaptService.createVaptCard(
+                        request.getApplicationId(),
+                        currentUser.getId()
+                )
         );
     }
 
@@ -54,26 +41,12 @@ public class VaptController {
             @RequestBody CreateVaptAuditRequest request,
             @AuthenticationPrincipal UserDetailsImplementation currentUser) {
 
-        VaptAudit audit = vaptService.createVaptAudit(
-                request.getCardId(),
-                request.getAuditYear(),
-                currentUser.getId()
-        );
-
         return ResponseEntity.ok(
-                VaptAuditResponse.builder()
-                        .id(audit.getId())
-                        .cardId(audit.getVaptCard().getId())
-                        .auditYear(audit.getAuditYear())
-                        .status(audit.getStatus())
-                        .auditInfo(
-                                AuditInfoResponse.builder()
-                                        .userId(audit.getCreatedBy().getId())
-                                        .username(audit.getCreatedBy().getUserName())
-                                        .createdAt(audit.getCreatedAt())
-                                        .build()
-                        )
-                        .build()
+                vaptService.createVaptAudit(
+                        request.getCardId(),
+                        request.getAuditYear(),
+                        currentUser.getId()
+                )
         );
     }
 
@@ -81,10 +54,8 @@ public class VaptController {
     public ResponseEntity<List<VaptAuditResponse>> getAuditsByCardId(
             @PathVariable Long cardId) {
 
-        List<VaptAuditResponse> audits = vaptService.getAuditsByCardId(cardId);
-
         return ResponseEntity.ok(
-                audits
+                vaptService.getAuditsByCardId(cardId)
         );
     }
 
@@ -92,46 +63,48 @@ public class VaptController {
     public ResponseEntity<VaptCardResponse> getCardByApplicationId(
             @PathVariable Long applicationId) {
 
-        VaptCardResponse vaptCardResponse = vaptService.getVaptCardByApplicationId(applicationId);
-
         return ResponseEntity.ok(
-                vaptCardResponse
+                vaptService.getVaptCardByApplicationId(applicationId)
         );
     }
 
     @PostMapping("/audit/{auditId}/phase")
-    public ResponseEntity<?> createPhase(
+    public ResponseEntity<List<VulnerabilityResponse>> createPhase(
             @PathVariable Long auditId,
             @RequestParam("file") MultipartFile file,
             @RequestParam("password") String password,
-            @AuthenticationPrincipal UserDetailsImplementation currentUser
-    ) {
+            @AuthenticationPrincipal UserDetailsImplementation currentUser) {
 
-        List<VulnerabilityResponse> response = vaptService.createNextPhase(auditId, file, password, currentUser.getId());
         return ResponseEntity.ok(
-                response
+                vaptService.createNextPhase(
+                        auditId,
+                        file,
+                        password,
+                        currentUser.getId()
+                )
         );
     }
 
     @GetMapping("/audit/{auditId}/phase")
     public ResponseEntity<?> getPhase(
-            @PathVariable Long auditId
-    ) {
+            @PathVariable Long auditId) {
 
-        List<VaptAuditPhaseResponse> response = vaptService.getPhase(auditId);
         return ResponseEntity.ok(
-                response
+                vaptService.getPhase(auditId)
         );
     }
 
     @GetMapping("/audit/{phaseId}/vulnerabilities")
-    public ResponseEntity<?> getVulnerabilities(@PathVariable Long phaseId) {
-        List<VulnerabilityResponse> response = vaptService.getVulnerabilities(phaseId);
-        return ResponseEntity.ok(response);
+    public ResponseEntity<?> getVulnerabilities(
+            @PathVariable Long phaseId) {
+
+        return ResponseEntity.ok(
+                vaptService.getVulnerabilities(phaseId)
+        );
     }
 
     @GetMapping("/vulnerabilities/stats")
-    public ResponseEntity<VulnerabilityStatsResponse> VulnerabilityStatsByUser(
+    public ResponseEntity<VulnerabilityStatsResponse> vulnerabilityStatsByUser(
             @AuthenticationPrincipal UserDetailsImplementation currentUser) {
 
         return ResponseEntity.ok(
@@ -181,7 +154,7 @@ public class VaptController {
     }
 
     @GetMapping("/summary")
-    public ResponseEntity<VulnerabilityStatsResponse> SystemSummary() {
+    public ResponseEntity<VulnerabilityStatsResponse> systemSummary() {
 
         return ResponseEntity.ok(
                 vaptService.getGlobalSummary()
@@ -218,10 +191,15 @@ public class VaptController {
     @PatchMapping("/vulnerabilities/{vulnerabilityId}")
     public ResponseEntity<VulnerabilityResponse> updateVulnerability(
             @PathVariable Long vulnerabilityId,
-            @RequestBody VulnerabilityUpdateRequest request) {
+            @RequestBody VulnerabilityUpdateRequest request,
+            @AuthenticationPrincipal UserDetailsImplementation currentUser) {
 
         return ResponseEntity.ok(
-                vaptService.updateVulnerability(vulnerabilityId, request)
+                vaptService.updateVulnerability(
+                        vulnerabilityId,
+                        request,
+                        currentUser.getId()
+                )
         );
     }
 
@@ -241,5 +219,55 @@ public class VaptController {
         vaptService.closeAudit(auditId);
 
         return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/vulnerabilities/{vulnerabilityId}/assign")
+    public ResponseEntity<Void> assignVulnerability(
+            @PathVariable Long vulnerabilityId,
+            @RequestBody AssignVulnerabilityRequest request,
+            @AuthenticationPrincipal UserDetailsImplementation currentUser) {
+
+        vaptService.assignVulnerability(
+                vulnerabilityId,
+                request.getDeveloperId(),
+                currentUser.getId()
+        );
+
+        return ResponseEntity.ok().build();
+    }
+
+    @PatchMapping("/vulnerabilities/{vulnerabilityId}/deassign")
+    public ResponseEntity<Void> deassignVulnerability(
+            @PathVariable Long vulnerabilityId,
+            @AuthenticationPrincipal UserDetailsImplementation currentUser) {
+
+        vaptService.deassignVulnerability(
+                vulnerabilityId,
+                currentUser.getId()
+        );
+
+        return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/users/me/vulnerabilities")
+    public ResponseEntity<List<VulnerabilityResponse>>
+    getMyAssignedVulnerabilities(
+            @AuthenticationPrincipal UserDetailsImplementation currentUser) {
+
+        return ResponseEntity.ok(
+                vaptService.getAssignedVulnerabilities(
+                        currentUser.getId()
+                )
+        );
+    }
+
+    @GetMapping("/users/{userId}/vulnerabilities")
+    public ResponseEntity<List<VulnerabilityResponse>>
+    getAssignedVulnerabilities(
+            @PathVariable Long userId) {
+
+        return ResponseEntity.ok(
+                vaptService.getAssignedVulnerabilities(userId)
+        );
     }
 }
