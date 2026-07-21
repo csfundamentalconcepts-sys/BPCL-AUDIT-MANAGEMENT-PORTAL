@@ -32,6 +32,7 @@ public class VaptService {
     private final VaptAuditPhaseRepository vaptAuditPhaseRepository;
     private final WebClient webClient;
     private final VulnerabilityRepository vulnerabilityRepository;
+    private final VulnerabilityAssignmentRepository vulnerabilityAssignmentRepository;
 
     public VaptService(
             VaptCardRepository vaptCardRepository,
@@ -39,6 +40,7 @@ public class VaptService {
             VaptAuditRepository vaptAuditRepository, UserRepository userRepository,
             VaptAuditPhaseRepository vaptAuditPhaseRepository,
             VulnerabilityRepository vulnerabilityRepository,
+            VulnerabilityAssignmentRepository vulnerabilityAssignmentRepository,
             WebClient webClient) {
 
         this.vaptCardRepository = vaptCardRepository;
@@ -48,40 +50,116 @@ public class VaptService {
         this.vaptAuditPhaseRepository = vaptAuditPhaseRepository;
         this.vulnerabilityRepository = vulnerabilityRepository;
         this.webClient = webClient;
+        this.vulnerabilityAssignmentRepository = vulnerabilityAssignmentRepository;
     }
 
     @Transactional
-    public VaptCard createVaptCard(Long applicationId, Long userId) {
+    public void assignVulnerability(
+            Long vulnerabilityId,
+            Long developerId,
+            Long currentUserId) {
+
+        User currentUser = userRepository.findById(currentUserId)
+                .orElseThrow(() ->
+                        new BAMPException(Errors.USER_NOT_FOUND));
+
+        if (currentUser.getRole().getRoleName() != AppRole.SCRUM_MASTER) {
+            throw new BAMPException(
+                    Errors.INVALID_VULNERABILITY_ASSIGNMENT);
+        }
+
+        User developer = userRepository.findById(developerId)
+                .orElseThrow(() ->
+                        new BAMPException(Errors.USER_NOT_FOUND));
+
+        if (developer.getRole().getRoleName() != AppRole.DEVELOPER) {
+            throw new BAMPException(
+                    Errors.INVALID_VULNERABILITY_ASSIGNMENT);
+        }
+
+        Vulnerability vulnerability =
+                vulnerabilityRepository.findById(vulnerabilityId)
+                        .orElseThrow(() ->
+                                new BAMPException(
+                                        Errors.VULNERABILITY_NOT_FOUND));
+
+        vulnerabilityAssignmentRepository
+                .findByVulnerabilityIdAndActiveTrue(vulnerabilityId)
+                .ifPresent(existing -> {
+                    throw new BAMPException(
+                            Errors.USER_ALREADY_ASSIGNED);
+                });
+
+        VulnerabilityAssignment assignment =
+                VulnerabilityAssignment.builder()
+                        .vulnerability(vulnerability)
+                        .assignedTo(developer)
+                        .assignedBy(currentUser)
+                        .active(true)
+                        .build();
+
+        vulnerabilityAssignmentRepository.save(assignment);
+    }
+
+    @Transactional
+    public VaptCardResponse createVaptCard(
+            Long applicationId,
+            Long userId) {
 
         if (vaptCardRepository.existsByApplicationId(applicationId)) {
             throw new BAMPException(Errors.VAPT_CARD_ALREADY_EXISTS);
         }
 
         Application application = applicationRepository.findById(applicationId)
-                .orElseThrow(() -> new BAMPException(Errors.APPLICATION_NOT_FOUND));
+                .orElseThrow(() ->
+                        new BAMPException(Errors.APPLICATION_NOT_FOUND));
 
-        User currentUser = userRepository.findById(userId).orElseThrow(()-> new BAMPException(Errors.USER_NOT_FOUND));
+        User currentUser = userRepository.findById(userId)
+                .orElseThrow(() ->
+                        new BAMPException(Errors.USER_NOT_FOUND));
 
         VaptCard card = VaptCard.builder()
                 .application(application)
                 .createdBy(currentUser)
                 .build();
 
-        return vaptCardRepository.save(card);
+        card = vaptCardRepository.save(card);
+
+        return VaptCardResponse.builder()
+                .id(card.getId())
+                .applicationId(card.getApplication().getId())
+                .auditInfo(
+                        AuditInfoResponse.builder()
+                                .userId(card.getCreatedBy().getId())
+                                .username(card.getCreatedBy().getUserName())
+                                .createdAt(card.getCreatedAt())
+                                .build()
+                )
+                .build();
     }
-
     @Transactional
-    public VaptAudit createVaptAudit(Long cardId, Integer auditYear, Long userId){
+    public VaptAuditResponse createVaptAudit(
+            Long cardId,
+            Integer auditYear,
+            Long userId) {
 
+        if (vaptAuditRepository.existsByVaptCardIdAndAuditYear(
+                cardId,
+                auditYear)) {
 
-        if (vaptAuditRepository.existsByVaptCardIdAndAuditYear(cardId, auditYear)) {
-            throw new BAMPException(Errors.VAPT_AUDIT_ALREADY_EXISTS);
+            throw new BAMPException(
+                    Errors.VAPT_AUDIT_ALREADY_EXISTS);
         }
 
         VaptCard card = vaptCardRepository.findById(cardId)
-                .orElseThrow(() -> new BAMPException(Errors.VAPT_CARD_NOT_FOUND));
+                .orElseThrow(() ->
+                        new BAMPException(
+                                Errors.VAPT_CARD_NOT_FOUND));
 
-        User currentUser = userRepository.findById(userId).orElseThrow(()-> new BAMPException(Errors.USER_NOT_FOUND));
+        User currentUser = userRepository.findById(userId)
+                .orElseThrow(() ->
+                        new BAMPException(
+                                Errors.USER_NOT_FOUND));
 
         VaptAudit audit = VaptAudit.builder()
                 .vaptCard(card)
@@ -90,14 +168,29 @@ public class VaptService {
                 .createdBy(currentUser)
                 .build();
 
-        return vaptAuditRepository.save(audit);
+        audit = vaptAuditRepository.save(audit);
+
+        return VaptAuditResponse.builder()
+                .id(audit.getId())
+                .cardId(audit.getVaptCard().getId())
+                .auditYear(audit.getAuditYear())
+                .status(audit.getStatus())
+                .auditInfo(
+                        AuditInfoResponse.builder()
+                                .userId(audit.getCreatedBy().getId())
+                                .username(audit.getCreatedBy().getUserName())
+                                .createdAt(audit.getCreatedAt())
+                                .build()
+                )
+                .build();
     }
 
     @Transactional(readOnly = true)
     public VaptCardResponse getVaptCardByApplicationId(Long applicationId) {
 
         VaptCard card = vaptCardRepository.findByApplicationId(applicationId)
-                .orElseThrow(() -> new BAMPException(Errors.VAPT_CARD_NOT_FOUND));
+                .orElseThrow(() ->
+                        new BAMPException(Errors.VAPT_CARD_NOT_FOUND));
 
         return VaptCardResponse.builder()
                 .id(card.getId())
@@ -178,69 +271,222 @@ public class VaptService {
                 .bodyToMono(new ParameterizedTypeReference<List<Map<String, Object>>>() {})
                 .block();
     }
-    @Transactional
-    public List<Vulnerability> saveVulnerabilities(
-            List<Map<String, Object>> response,
-            VaptAuditPhase phase
-    ) {
 
-        List<Vulnerability> vulnerabilities = new ArrayList<>();
+    private NewOrRepeat determineNewOrRepeat(
+            VaptAuditPhase phase,
+            String vulnerabilityId) {
 
-        if (response != null) {
-            for (Map<String, Object> v : response) {
+        Long cardId =
+                phase.getVaptAudit()
+                        .getVaptCard()
+                        .getId();
 
-                Vulnerability vuln = new Vulnerability();
-                vuln.setVulnerabilityId((String) v.get("Vulnerability ID"));
-                vuln.setAffectedAsset((String) v.get("Affected Asset"));
-                vuln.setName((String) v.get("Nameof the Vulnerability"));
-                vuln.setDetailedObservation((String) v.get("Detailed observation"));
-                vuln.setCveCwe((String) v.get("CVE/CWE"));
-                vuln.setCvss((String) v.get("CVSS"));
-                vuln.setEpss((String) v.get("EPSS"));
-                vuln.setSeverity((String) v.get("Severity"));
-                vuln.setStatus((String) v.get("Status"));
-                vuln.setRecommendation((String) v.get("Recommendation"));
-                vuln.setReference((String) v.get("Reference"));
-                vuln.setNewOrRepeat((String) v.get("New or repeat"));
-                vuln.setVaptAuditPhase(phase);
+        List<VaptAudit> audits =
+                vaptAuditRepository
+                        .findByVaptCardIdOrderByAuditYearDesc(cardId);
 
-                List<String> points = (List<String>) v.get("Vulnerability Point");
+        for (VaptAudit audit : audits) {
 
-                List<VulnerabilityPoint> pointEntities = new ArrayList<>();
-                if (points != null) {
-                    for (String point : points) {
-                        VulnerabilityPoint vp = new VulnerabilityPoint();
-                        vp.setValue(point);
-                        vp.setVulnerability(vuln);
-                        pointEntities.add(vp);
-                    }
+            if (audit.getId().equals(
+                    phase.getVaptAudit().getId())) {
+                continue;
+            }
+
+            List<VaptAuditPhase> phases =
+                    vaptAuditPhaseRepository
+                            .findByVaptAuditId(audit.getId());
+
+            for (VaptAuditPhase previous : phases) {
+
+                boolean exists =
+                        vulnerabilityRepository
+                                .findByVaptAuditPhaseId(
+                                        previous.getId())
+                                .stream()
+                                .anyMatch(v ->
+                                        vulnerabilityId.equals(
+                                                v.getVulnerabilityId()));
+
+                if (exists) {
+                    return NewOrRepeat.REPEAT;
                 }
-
-                vuln.setVulnerabilityPoints(pointEntities);
-                vulnerabilities.add(vuln);
             }
         }
 
-        return vulnerabilityRepository.saveAll(vulnerabilities);
+        return NewOrRepeat.NEW;
     }
 
+    private Vulnerability buildVulnerability(
+            Map<String, Object> row,
+            VaptAuditPhase phase) {
+
+        Vulnerability vulnerability =
+                new Vulnerability();
+
+        vulnerability.setVulnerabilityId(
+                (String) row.get("Vulnerability ID"));
+
+        vulnerability.setAffectedAsset(
+                (String) row.get("Affected Asset"));
+
+        vulnerability.setName(
+                (String) row.get("Nameof the Vulnerability"));
+
+        vulnerability.setDetailedObservation(
+                (String) row.get("Detailed observation"));
+
+        vulnerability.setCveCwe(
+                (String) row.get("CVE/CWE"));
+
+        vulnerability.setCvss(
+                (String) row.get("CVSS"));
+
+        vulnerability.setEpss(
+                (String) row.get("EPSS"));
+
+        vulnerability.setSeverity(
+                (String) row.get("Severity"));
+
+        vulnerability.setStatus(
+                VulnerabilityStatus.valueOf(
+                        ((String) row.get("Status"))
+                                .trim()
+                                .toUpperCase()
+                ));
+
+        vulnerability.setNewOrRepeat(
+                determineNewOrRepeat(
+                        phase,
+                        (String) row.get("Vulnerability ID")
+                ));
+
+        vulnerability.setRecommendation(
+                (String) row.get("Recommendation"));
+
+        vulnerability.setReference(
+                (String) row.get("Reference"));
+
+        vulnerability.setVaptAuditPhase(phase);
+
+        return vulnerability;
+    }
+    private VulnerabilityAssignment findPreviousAssignment(
+            String vulnerabilityExternalId,
+            VaptAuditPhase currentPhase) {
+
+        Long cardId =
+                currentPhase.getVaptAudit()
+                        .getVaptCard()
+                        .getId();
+
+        List<VaptAudit> audits =
+                vaptAuditRepository
+                        .findByVaptCardIdOrderByAuditYearDesc(cardId);
+
+        for (VaptAudit audit : audits) {
+
+            List<VaptAuditPhase> phases =
+                    vaptAuditPhaseRepository
+                            .findByVaptAuditId(audit.getId());
+
+            for (VaptAuditPhase phase : phases) {
+
+                List<Vulnerability> vulnerabilities =
+                        vulnerabilityRepository
+                                .findByVaptAuditPhaseId(
+                                        phase.getId());
+
+                for (Vulnerability vulnerability : vulnerabilities) {
+
+                    if (!vulnerabilityExternalId.equals(
+                            vulnerability.getVulnerabilityId())) {
+                        continue;
+                    }
+
+                    return vulnerabilityAssignmentRepository
+                            .findByVulnerabilityIdAndActiveTrue(
+                                    vulnerability.getId())
+                            .orElse(null);
+                }
+            }
+        }
+
+        return null;
+    }
+    private void handleAssignmentMigration(
+            Vulnerability vulnerability,
+            VaptAuditPhase currentPhase) {
+
+        VulnerabilityAssignment previousAssignment =
+                findPreviousAssignment(
+                        vulnerability.getVulnerabilityId(),
+                        currentPhase
+                );
+
+        if (previousAssignment == null) {
+            return;
+        }
+
+        VulnerabilityAssignment assignment =
+                VulnerabilityAssignment.builder()
+                        .vulnerability(vulnerability)
+                        .assignedTo(
+                                previousAssignment.getAssignedTo())
+                        .assignedBy(
+                                previousAssignment.getAssignedBy())
+                        .active(true)
+                        .build();
+
+        vulnerabilityAssignmentRepository.save(
+                assignment
+        );
+    }
+    @Transactional
+    public List<Vulnerability> saveVulnerabilities(
+            List<Map<String, Object>> parsed,
+            VaptAuditPhase phase) {
+
+        List<Vulnerability> saved = new ArrayList<>();
+
+        for (Map<String, Object> row : parsed) {
+
+            Vulnerability vulnerability =
+                    buildVulnerability(row, phase);
+
+            vulnerability =
+                    vulnerabilityRepository.save(vulnerability);
+
+            handleAssignmentMigration(
+                    vulnerability,
+                    phase
+            );
+
+            saved.add(vulnerability);
+        }
+
+        return saved;
+    }
+
+    @Transactional
     public List<VulnerabilityResponse> createNextPhase(
             Long auditId,
             MultipartFile file,
             String password,
-            Long userId
-    ) {
-        VaptAuditPhase phase = createPhase(auditId, userId);
+            Long userId) {
 
-        List<Map<String, Object>> response = parsePdf(file, password);
+        VaptAuditPhase phase =
+                createPhase(auditId, userId);
 
-        List<Vulnerability> saved = saveVulnerabilities(response, phase);
+        List<Map<String, Object>> parsed =
+                parsePdf(file, password);
+
+        List<Vulnerability> saved =
+                saveVulnerabilities(parsed, phase);
 
         return saved.stream()
                 .map(VulnerabilityMapper::toResponse)
                 .toList();
     }
-
 
     @Transactional(readOnly = true)
     public List<VulnerabilityResponse> getVulnerabilities(Long phaseId) {
@@ -251,7 +497,20 @@ public class VaptService {
 
         return vulnerabilityRepository.findByVaptAuditPhaseId(phaseId)
                 .stream()
-                .map(VulnerabilityMapper::toResponse)
+                .map(vulnerability -> {
+
+                    VulnerabilityAssignment assignment =
+                            vulnerabilityAssignmentRepository
+                                    .findByVulnerabilityIdAndActiveTrue(
+                                            vulnerability.getId()
+                                    )
+                                    .orElse(null);
+
+                    return VulnerabilityMapper.toResponse(
+                            vulnerability,
+                            assignment
+                    );
+                })
                 .toList();
     }
 
