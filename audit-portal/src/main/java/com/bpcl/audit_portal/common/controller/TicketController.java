@@ -27,7 +27,11 @@ public class TicketController {
     public TicketResponse createTicket(
             @RequestBody CreateTicketRequest request,
             @AuthenticationPrincipal UserDetailsImplementation userDetails) {
-        return ticketService.createTicket(request, userDetails.getId());
+
+        return ticketService.createTicket(
+                request,
+                userDetails.getId()
+        );
     }
 
     @PostMapping("/{ticketId}/assign/{assignedToId}")

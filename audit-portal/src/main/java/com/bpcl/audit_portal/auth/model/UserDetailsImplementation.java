@@ -57,19 +57,19 @@ public class UserDetailsImplementation implements UserDetails {
                 )
         );
 
-        if (user.getApplications() != null) {
-
-            authorities.addAll(
-                    user.getApplications()
-                            .stream()
-                            .map(application ->
-                                    new SimpleGrantedAuthority(
-                                            "APP_" + application.getId()
-                                    )
-                            )
-                            .toList()
-            );
-        }
+//        if (user.getApplications() != null) {
+//
+//            authorities.addAll(
+//                    user.getApplications()
+//                            .stream()
+//                            .map(application ->
+//                                    new SimpleGrantedAuthority(
+//                                            "APP_" + application.getId()
+//                                    )
+//                            )
+//                            .toList()
+//            );
+//        }
 
         return new UserDetailsImplementation(
                 user.getId(),

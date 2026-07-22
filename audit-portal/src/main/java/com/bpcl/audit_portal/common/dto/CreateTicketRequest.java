@@ -3,23 +3,16 @@ package com.bpcl.audit_portal.common.dto;
 import com.bpcl.audit_portal.common.constants.Priority;
 import com.bpcl.audit_portal.common.constants.TicketStatus;
 import com.bpcl.audit_portal.common.constants.TicketType;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.Data;
 
-@Getter
-@Setter
+@Data
 public class CreateTicketRequest {
 
-    @NotBlank(message = "Title is mandatory")
     private String title;
-
-    @NotBlank(message = "Description is mandatory")
     private String description;
-
-
-    private Long assignedToId;
+    private Priority priority;
+    private TicketStatus status;
+    private TicketType type;
 
     private String startDate;
     private String targetDate;
@@ -28,13 +21,7 @@ public class CreateTicketRequest {
 
     private Integer storyPoint;
 
-    @NotNull(message = "Application ID is mandatory")
     private Long applicationId;
 
-    private TicketStatus status;
-
-    private TicketType type;
-
-    @NotNull(message = "Priority is mandatory")
-    private Priority priority;
+    private Long assignedToId;
 }
