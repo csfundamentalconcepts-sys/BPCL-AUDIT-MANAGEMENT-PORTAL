@@ -4,24 +4,21 @@ import com.bpcl.audit_portal.common.constants.Priority;
 import com.bpcl.audit_portal.common.constants.TicketStatus;
 import com.bpcl.audit_portal.common.constants.TicketType;
 import lombok.Builder;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.Data;
 
 import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.util.List;
 
-@Getter
-@Setter
+@Data
 @Builder
 public class TicketResponse {
+
     private Long id;
 
     private String title;
 
-    private String description;
+    private Priority priority;
 
-    private String assignedTo;
+    private String description;
 
     private String startDate;
 
@@ -41,9 +38,11 @@ public class TicketResponse {
 
     private String spocComment;
 
-    private Priority priority;
+    private UserDto createdBy;
+
+    private Long assignedUserId;
+
+    private String assignedUserName;
 
     private LocalDateTime createdAt;
-
-    private UserDto createdBy;
 }

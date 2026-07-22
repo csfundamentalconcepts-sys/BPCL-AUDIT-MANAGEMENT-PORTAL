@@ -4,6 +4,7 @@ import com.bpcl.audit_portal.common.dto.*;
 import com.bpcl.audit_portal.common.exceptions.BAMPException;
 import com.bpcl.audit_portal.common.exceptions.Errors;
 import com.bpcl.audit_portal.common.mapper.VaptAuditPhaseMapper;
+import com.bpcl.audit_portal.common.mapper.VulnerabilityAssignmentMapper;
 import com.bpcl.audit_portal.common.mapper.VulnerabilityMapper;
 import com.bpcl.audit_portal.common.model.*;
 import com.bpcl.audit_portal.common.repository.*;
@@ -17,6 +18,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -33,6 +35,8 @@ public class VaptService {
     private final WebClient webClient;
     private final VulnerabilityRepository vulnerabilityRepository;
     private final VulnerabilityAssignmentRepository vulnerabilityAssignmentRepository;
+    private final VaptVulnerabilityHistoryRepository vulnerabilityHistoryRepository;
+    private final VulnerabilityAssignmentMapper vulnerabilityAssignmentMapper;
 
     public VaptService(
             VaptCardRepository vaptCardRepository,
@@ -41,6 +45,8 @@ public class VaptService {
             VaptAuditPhaseRepository vaptAuditPhaseRepository,
             VulnerabilityRepository vulnerabilityRepository,
             VulnerabilityAssignmentRepository vulnerabilityAssignmentRepository,
+            VaptVulnerabilityHistoryRepository vulnerabilityHistoryRepository,
+            VulnerabilityAssignmentMapper vulnerabilityAssignmentMapper,
             WebClient webClient) {
 
         this.vaptCardRepository = vaptCardRepository;
@@ -51,6 +57,8 @@ public class VaptService {
         this.vulnerabilityRepository = vulnerabilityRepository;
         this.webClient = webClient;
         this.vulnerabilityAssignmentRepository = vulnerabilityAssignmentRepository;
+        this.vulnerabilityHistoryRepository = vulnerabilityHistoryRepository;
+        this.vulnerabilityAssignmentMapper=vulnerabilityAssignmentMapper;
     }
 
     @Transactional
@@ -466,7 +474,6 @@ public class VaptService {
 
         return saved;
     }
-
     @Transactional
     public List<VulnerabilityResponse> createNextPhase(
             Long auditId,
@@ -474,8 +481,10 @@ public class VaptService {
             String password,
             Long userId) {
 
-        VaptAuditPhase phase =
-                createPhase(auditId, userId);
+        VaptAuditPhase phase = createPhase(
+                auditId,
+                userId
+        );
 
         List<Map<String, Object>> parsed =
                 parsePdf(file, password);
@@ -484,7 +493,20 @@ public class VaptService {
                 saveVulnerabilities(parsed, phase);
 
         return saved.stream()
-                .map(VulnerabilityMapper::toResponse)
+                .map(vulnerability -> {
+
+                    VulnerabilityAssignment assignment =
+                            vulnerabilityAssignmentRepository
+                                    .findByVulnerabilityIdAndActiveTrue(
+                                            vulnerability.getId()
+                                    )
+                                    .orElse(null);
+
+                    return VulnerabilityMapper.toResponse(
+                            vulnerability,
+                            assignment
+                    );
+                })
                 .toList();
     }
 
@@ -632,68 +654,297 @@ public class VaptService {
     @Transactional
     public VulnerabilityResponse updateVulnerability(
             Long vulnerabilityId,
-            VulnerabilityUpdateRequest request) {
+            VulnerabilityUpdateRequest request,
+            Long userId
+    ) {
 
-        Vulnerability vulnerability = vulnerabilityRepository.findById(vulnerabilityId)
+        Vulnerability vulnerability = vulnerabilityRepository
+                .findById(vulnerabilityId)
                 .orElseThrow(() ->
-                        new RuntimeException("Vulnerability not found"));
+                        new BAMPException(
+                                Errors.VULNERABILITY_NOT_FOUND
+                        ));
 
-        if (request.getVulnerabilityId() != null) {
-            vulnerability.setVulnerabilityId(request.getVulnerabilityId());
+        User updatedBy = userRepository
+                .findById(userId)
+                .orElseThrow(() ->
+                        new BAMPException(
+                                Errors.USER_NOT_FOUND
+                        ));
+
+        if (request.getVulnerabilityId() != null &&
+                !request.getVulnerabilityId().equals(
+                        vulnerability.getVulnerabilityId())) {
+
+            vulnerabilityHistoryRepository.save(
+                    VaptVulnerabilityHistory.builder()
+                            .vulnerability(vulnerability)
+                            .fieldName("vulnerabilityId")
+                            .oldValue(vulnerability.getVulnerabilityId())
+                            .newValue(request.getVulnerabilityId())
+                            .updatedBy(updatedBy)
+                            .build()
+            );
+
+            vulnerability.setVulnerabilityId(
+                    request.getVulnerabilityId()
+            );
         }
 
-        if (request.getAffectedAsset() != null) {
-            vulnerability.setAffectedAsset(request.getAffectedAsset());
+        if (request.getAffectedAsset() != null &&
+                !request.getAffectedAsset().equals(
+                        vulnerability.getAffectedAsset())) {
+
+            vulnerabilityHistoryRepository.save(
+                    VaptVulnerabilityHistory.builder()
+                            .vulnerability(vulnerability)
+                            .fieldName("affectedAsset")
+                            .oldValue(vulnerability.getAffectedAsset())
+                            .newValue(request.getAffectedAsset())
+                            .updatedBy(updatedBy)
+                            .build()
+            );
+
+            vulnerability.setAffectedAsset(
+                    request.getAffectedAsset()
+            );
         }
 
-        if (request.getName() != null) {
-            vulnerability.setName(request.getName());
+        if (request.getName() != null &&
+                !request.getName().equals(
+                        vulnerability.getName())) {
+
+            vulnerabilityHistoryRepository.save(
+                    VaptVulnerabilityHistory.builder()
+                            .vulnerability(vulnerability)
+                            .fieldName("name")
+                            .oldValue(vulnerability.getName())
+                            .newValue(request.getName())
+                            .updatedBy(updatedBy)
+                            .build()
+            );
+
+            vulnerability.setName(
+                    request.getName()
+            );
         }
 
-        if (request.getDetailedObservation() != null) {
-            vulnerability.setDetailedObservation(request.getDetailedObservation());
+        if (request.getDetailedObservation() != null &&
+                !request.getDetailedObservation().equals(
+                        vulnerability.getDetailedObservation())) {
+
+            vulnerabilityHistoryRepository.save(
+                    VaptVulnerabilityHistory.builder()
+                            .vulnerability(vulnerability)
+                            .fieldName("detailedObservation")
+                            .oldValue(vulnerability.getDetailedObservation())
+                            .newValue(request.getDetailedObservation())
+                            .updatedBy(updatedBy)
+                            .build()
+            );
+
+            vulnerability.setDetailedObservation(
+                    request.getDetailedObservation()
+            );
         }
 
-        if (request.getCveCwe() != null) {
-            vulnerability.setCveCwe(request.getCveCwe());
+        if (request.getCveCwe() != null &&
+                !request.getCveCwe().equals(
+                        vulnerability.getCveCwe())) {
+
+            vulnerabilityHistoryRepository.save(
+                    VaptVulnerabilityHistory.builder()
+                            .vulnerability(vulnerability)
+                            .fieldName("cveCwe")
+                            .oldValue(vulnerability.getCveCwe())
+                            .newValue(request.getCveCwe())
+                            .updatedBy(updatedBy)
+                            .build()
+            );
+
+            vulnerability.setCveCwe(
+                    request.getCveCwe()
+            );
         }
 
-        if (request.getCvss() != null) {
-            vulnerability.setCvss(request.getCvss());
+        if (request.getCvss() != null &&
+                !request.getCvss().equals(
+                        vulnerability.getCvss())) {
+
+            vulnerabilityHistoryRepository.save(
+                    VaptVulnerabilityHistory.builder()
+                            .vulnerability(vulnerability)
+                            .fieldName("cvss")
+                            .oldValue(vulnerability.getCvss())
+                            .newValue(request.getCvss())
+                            .updatedBy(updatedBy)
+                            .build()
+            );
+
+            vulnerability.setCvss(
+                    request.getCvss()
+            );
         }
 
-        if (request.getEpss() != null) {
-            vulnerability.setEpss(request.getEpss());
+        if (request.getEpss() != null &&
+                !request.getEpss().equals(
+                        vulnerability.getEpss())) {
+
+            vulnerabilityHistoryRepository.save(
+                    VaptVulnerabilityHistory.builder()
+                            .vulnerability(vulnerability)
+                            .fieldName("epss")
+                            .oldValue(vulnerability.getEpss())
+                            .newValue(request.getEpss())
+                            .updatedBy(updatedBy)
+                            .build()
+            );
+
+            vulnerability.setEpss(
+                    request.getEpss()
+            );
         }
 
-        if (request.getSeverity() != null) {
-            vulnerability.setSeverity(request.getSeverity());
+        if (request.getSeverity() != null &&
+                !request.getSeverity().equals(
+                        vulnerability.getSeverity())) {
+
+            vulnerabilityHistoryRepository.save(
+                    VaptVulnerabilityHistory.builder()
+                            .vulnerability(vulnerability)
+                            .fieldName("severity")
+                            .oldValue(vulnerability.getSeverity())
+                            .newValue(request.getSeverity())
+                            .updatedBy(updatedBy)
+                            .build()
+            );
+
+            vulnerability.setSeverity(
+                    request.getSeverity()
+            );
         }
 
-        if (request.getStatus() != null) {
-            vulnerability.setStatus(request.getStatus());
+        if (request.getStatus() != null &&
+                request.getStatus() != vulnerability.getStatus()) {
+
+            vulnerabilityHistoryRepository.save(
+                    VaptVulnerabilityHistory.builder()
+                            .vulnerability(vulnerability)
+                            .fieldName("status")
+                            .oldValue(vulnerability.getStatus().name())
+                            .newValue(request.getStatus().name())
+                            .updatedBy(updatedBy)
+                            .build()
+            );
+
+            vulnerability.setStatus(
+                    request.getStatus()
+            );
         }
 
-        if (request.getVulnerabilityStatusByUser() != null) {
+        if (request.getVulnerabilityStatusByUser() != null &&
+                request.getVulnerabilityStatusByUser()
+                        != vulnerability.getVulnerabilityStatusByUser()) {
+
+            vulnerabilityHistoryRepository.save(
+                    VaptVulnerabilityHistory.builder()
+                            .vulnerability(vulnerability)
+                            .fieldName("vulnerabilityStatusByUser")
+                            .oldValue(
+                                    vulnerability
+                                            .getVulnerabilityStatusByUser()
+                                            .name()
+                            )
+                            .newValue(
+                                    request
+                                            .getVulnerabilityStatusByUser()
+                                            .name()
+                            )
+                            .updatedBy(updatedBy)
+                            .build()
+            );
+
             vulnerability.setVulnerabilityStatusByUser(
-                    request.getVulnerabilityStatusByUser());
+                    request.getVulnerabilityStatusByUser()
+            );
         }
 
-        if (request.getRecommendation() != null) {
-            vulnerability.setRecommendation(request.getRecommendation());
+        if (request.getRecommendation() != null &&
+                !request.getRecommendation().equals(
+                        vulnerability.getRecommendation())) {
+
+            vulnerabilityHistoryRepository.save(
+                    VaptVulnerabilityHistory.builder()
+                            .vulnerability(vulnerability)
+                            .fieldName("recommendation")
+                            .oldValue(vulnerability.getRecommendation())
+                            .newValue(request.getRecommendation())
+                            .updatedBy(updatedBy)
+                            .build()
+            );
+
+            vulnerability.setRecommendation(
+                    request.getRecommendation()
+            );
         }
 
-        if (request.getReference() != null) {
-            vulnerability.setReference(request.getReference());
+        if (request.getReference() != null &&
+                !request.getReference().equals(
+                        vulnerability.getReference())) {
+
+            vulnerabilityHistoryRepository.save(
+                    VaptVulnerabilityHistory.builder()
+                            .vulnerability(vulnerability)
+                            .fieldName("reference")
+                            .oldValue(vulnerability.getReference())
+                            .newValue(request.getReference())
+                            .updatedBy(updatedBy)
+                            .build()
+            );
+
+            vulnerability.setReference(
+                    request.getReference()
+            );
         }
 
-        if (request.getNewOrRepeat() != null) {
-            vulnerability.setNewOrRepeat(request.getNewOrRepeat());
+        if (request.getNewOrRepeat() != null &&
+                request.getNewOrRepeat()
+                        != vulnerability.getNewOrRepeat()) {
+
+            vulnerabilityHistoryRepository.save(
+                    VaptVulnerabilityHistory.builder()
+                            .vulnerability(vulnerability)
+                            .fieldName("newOrRepeat")
+                            .oldValue(
+                                    vulnerability.getNewOrRepeat().name()
+                            )
+                            .newValue(
+                                    request.getNewOrRepeat().name()
+                            )
+                            .updatedBy(updatedBy)
+                            .build()
+            );
+
+            vulnerability.setNewOrRepeat(
+                    request.getNewOrRepeat()
+            );
         }
 
-        vulnerabilityRepository.save(vulnerability);
+        vulnerability = vulnerabilityRepository.save(
+                vulnerability
+        );
 
-        return VulnerabilityMapper.toResponse(vulnerability);
+        VulnerabilityAssignment assignment =
+                vulnerabilityAssignmentRepository
+                        .findByVulnerabilityIdAndActiveTrue(
+                                vulnerabilityId
+                        )
+                        .orElse(null);
+
+        return VulnerabilityMapper.toResponse(
+                vulnerability,
+                assignment
+        );
     }
 
     @Transactional
@@ -728,5 +979,102 @@ public class VaptService {
         }
         audit.setStatus(VaptAuditStatus.CLOSED);
         vaptAuditRepository.save(audit);
+    }
+    @Transactional
+    public void deassignVulnerability(
+            Long vulnerabilityId,
+            Long userId
+    ) {
+
+        Vulnerability vulnerability =
+                vulnerabilityRepository
+                        .findById(vulnerabilityId)
+                        .orElseThrow(() ->
+                                new BAMPException(
+                                        Errors.VULNERABILITY_NOT_FOUND
+                                ));
+
+        User currentUser =
+                userRepository.findById(userId)
+                        .orElseThrow(() ->
+                                new BAMPException(
+                                        Errors.USER_NOT_FOUND
+                                ));
+
+        VulnerabilityAssignment assignment =
+                vulnerabilityAssignmentRepository
+                        .findByVulnerabilityIdAndActiveTrue(
+                                vulnerabilityId
+                        )
+                        .orElseThrow(() ->
+                                new BAMPException(
+                                        Errors.VULNERABILITY_NOT_ASSIGNED
+                                ));
+
+        if (!assignment.getAssignedBy().getId()
+                .equals(userId)) {
+
+            throw new BAMPException(
+                    Errors.UNAUTHORIZED
+            );
+        }
+
+        assignment.setActive(false);
+        assignment.setDeassignedAt(LocalDateTime.now());
+        assignment.setDeassignedBy(currentUser);
+
+        vulnerabilityAssignmentRepository.save(
+                assignment
+        );
+    }
+    @Transactional(readOnly = true)
+    public List<VulnerabilityResponse>
+    getAssignedVulnerabilities(
+            Long userId
+    ) {
+
+        userRepository.findById(userId)
+                .orElseThrow(() ->
+                        new BAMPException(
+                                Errors.USER_NOT_FOUND
+                        ));
+
+        List<VulnerabilityAssignment> assignments =
+                vulnerabilityAssignmentRepository
+                        .findByAssignedToIdAndActiveTrue(
+                                userId
+                        );
+
+        return assignments.stream()
+                .map(assignment ->
+                        VulnerabilityMapper.toResponse(
+                                assignment.getVulnerability(),
+                                assignment
+                        )
+                )
+                .toList();
+    }
+    @Transactional(readOnly = true)
+    public List<VulnerabilityAssignmentResponse>
+    getAssignmentHistory(
+            Long vulnerabilityId
+    ) {
+
+        vulnerabilityRepository.findById(
+                        vulnerabilityId
+                )
+                .orElseThrow(() ->
+                        new BAMPException(
+                                Errors.VULNERABILITY_NOT_FOUND
+                        )
+                );
+
+        return vulnerabilityAssignmentRepository
+                .findByVulnerabilityIdOrderByAssignedAtDesc(
+                        vulnerabilityId
+                )
+                .stream()
+                .map(vulnerabilityAssignmentMapper::toResponse)
+                .toList();
     }
 }

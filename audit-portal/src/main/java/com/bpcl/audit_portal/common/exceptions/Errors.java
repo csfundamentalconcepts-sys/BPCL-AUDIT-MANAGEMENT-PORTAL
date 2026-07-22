@@ -136,7 +136,16 @@ public enum Errors {
             HttpStatus.BAD_REQUEST,
             1035L,
             "Only Scrum Master can assign tickets to developers."
-    );
+    ),VULNERABILITY_NOT_ASSIGNED(
+            HttpStatus.BAD_REQUEST,
+            1041L,
+            "Vulnerability is not assigned."
+    ),
+    TICKET_NOT_ASSIGNED(
+            HttpStatus.BAD_REQUEST,
+            1042L,
+            "Ticket is not assigned."
+    ),;
 
     private final HttpStatus httpStatus;
     private final Long errorCode;

@@ -17,4 +17,8 @@ public interface TicketAssignmentRepository extends JpaRepository<TicketAssignme
     boolean existsByTicketIdAndAssignedToIdAndActiveTrue(Long ticketId, Long userId);
 
     void deleteByTicketIdAndActiveTrue(Long ticketId);
+    List<TicketAssignment>
+    findByTicketIdOrderByAssignedAtDesc(
+            Long ticketId
+    );
 }

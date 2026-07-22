@@ -270,4 +270,17 @@ public class VaptController {
                 vaptService.getAssignedVulnerabilities(userId)
         );
     }
+
+    @GetMapping("/vulnerabilities/{vulnerabilityId}/assignments")
+    public ResponseEntity<List<VulnerabilityAssignmentResponse>>
+    getAssignmentHistory(
+            @PathVariable Long vulnerabilityId
+    ) {
+
+        return ResponseEntity.ok(
+                vaptService.getAssignmentHistory(
+                        vulnerabilityId
+                )
+        );
+    }
 }

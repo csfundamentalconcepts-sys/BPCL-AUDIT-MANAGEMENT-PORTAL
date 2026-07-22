@@ -11,14 +11,8 @@ import com.bpcl.audit_portal.common.dto.*;
 import com.bpcl.audit_portal.common.exceptions.BAMPException;
 import com.bpcl.audit_portal.common.exceptions.Errors;
 import com.bpcl.audit_portal.common.mapper.UserDtoMapper;
-import com.bpcl.audit_portal.common.model.Application;
-import com.bpcl.audit_portal.common.model.Role;
-import com.bpcl.audit_portal.common.model.User;
-import com.bpcl.audit_portal.common.model.UserAssignment;
-import com.bpcl.audit_portal.common.repository.ApplicationRepository;
-import com.bpcl.audit_portal.common.repository.RoleRepository;
-import com.bpcl.audit_portal.common.repository.UserAssignmentRepository;
-import com.bpcl.audit_portal.common.repository.UserRepository;
+import com.bpcl.audit_portal.common.model.*;
+import com.bpcl.audit_portal.common.repository.*;
 
 import com.bpcl.audit_portal.common.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -60,6 +54,8 @@ public class AuthService {
     private final UserDtoMapper userDtoMapper;
     private final UserService userService;
     private final UserAssignmentRepository userAssignmentRepository;
+    private final ApplicationAssignmentRepository
+            applicationAssignmentRepository;
 
 
     private static final Logger log =
@@ -77,7 +73,8 @@ public class AuthService {
             ApplicationRepository applicationRepository,
             PasswordResetTokenRepository passwordResetTokenRepository,
             UserDtoMapper userDtoMapper,
-            UserAssignmentRepository userAssignmentRepository
+            UserAssignmentRepository userAssignmentRepository,
+            ApplicationAssignmentRepository applicationAssignmentRepository
     ) {
         this.refreshTokenService = refreshTokenService;
         this.userRepository = userRepository;
@@ -91,6 +88,8 @@ public class AuthService {
         this.userDtoMapper = userDtoMapper;
         this.userService = userService;
         this.userAssignmentRepository = userAssignmentRepository;
+        this.applicationAssignmentRepository =
+                applicationAssignmentRepository;
     }
 
     @Transactional
@@ -195,10 +194,16 @@ public class AuthService {
         user.setLogout(false);
         userRepository.save(user);
 
-        List<Long> applicationIds = user.getApplications()
-                .stream()
-                .map(Application::getId)
-                .toList();
+        List<Long> applicationIds =
+                applicationAssignmentRepository
+                        .findByAssignedToIdAndActiveTrue(
+                                user.getId()
+                        )
+                        .stream()
+                        .map(ApplicationAssignment::getApplication)
+                        .map(Application::getId)
+                        .distinct()
+                        .toList();
 
         String jwtToken = jwtUtils.generateJwtToken(
                 user.getId(),
@@ -237,10 +242,16 @@ public class AuthService {
             throw new BAMPException(Errors.UNAUTHORIZED);
         }
 
-        List<Long> applicationIds = user.getApplications()
-                .stream()
-                .map(Application::getId)
-                .toList();
+        List<Long> applicationIds =
+                applicationAssignmentRepository
+                        .findByAssignedToIdAndActiveTrue(
+                                user.getId()
+                        )
+                        .stream()
+                        .map(ApplicationAssignment::getApplication)
+                        .map(Application::getId)
+                        .distinct()
+                        .toList();
 
         String jwtToken = jwtUtils.generateJwtToken(
                 user.getId(),

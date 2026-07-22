@@ -1,12 +1,11 @@
 package com.bpcl.audit_portal.common.service;
 
-import com.bpcl.audit_portal.common.constants.AppRole;
 import com.bpcl.audit_portal.common.constants.Priority;
 import com.bpcl.audit_portal.common.constants.TicketStatus;
-import com.bpcl.audit_portal.common.constants.TicketType;
 import com.bpcl.audit_portal.common.dto.*;
 import com.bpcl.audit_portal.common.exceptions.BAMPException;
 import com.bpcl.audit_portal.common.exceptions.Errors;
+import com.bpcl.audit_portal.common.mapper.TicketAssignmentMapper;
 import com.bpcl.audit_portal.common.mapper.TicketDtoMapper;
 import com.bpcl.audit_portal.common.model.*;
 import com.bpcl.audit_portal.common.repository.*;
@@ -25,46 +24,103 @@ public class TicketService {
     private final TicketHistoryRepository historyRepository;
     private final ApplicationRepository applicationRepository;
     private final UserRepository userRepository;
+    private final TicketAssignmentRepository ticketAssignmentRepository;
 
     public TicketService(TicketRepository ticketRepository,
                          TicketAssignmentRepository assignmentRepository,
                          TicketHistoryRepository historyRepository,
                          ApplicationRepository applicationRepository,
+                         TicketAssignmentRepository ticketAssignmentRepository,
                          UserRepository userRepository) {
         this.ticketRepository = ticketRepository;
         this.assignmentRepository = assignmentRepository;
         this.historyRepository = historyRepository;
         this.applicationRepository = applicationRepository;
         this.userRepository = userRepository;
+        this.ticketAssignmentRepository = ticketAssignmentRepository;
     }
-    public TicketResponse createTicket(CreateTicketRequest request, Long currentUserId) {
-        Application application = applicationRepository.findById(request.getApplicationId())
-                .orElseThrow(() -> new BAMPException(Errors.APPLICATION_NOT_FOUND));
+    @Transactional
+    public TicketResponse createTicket(
+            CreateTicketRequest request,
+            Long currentUserId
+    ) {
 
-        User currentUser = userRepository.findById(currentUserId)
-                .orElseThrow(() -> new BAMPException(Errors.USER_NOT_FOUND));
+        Application application =
+                applicationRepository.findById(
+                                request.getApplicationId()
+                        )
+                        .orElseThrow(() ->
+                                new BAMPException(
+                                        Errors.APPLICATION_NOT_FOUND
+                                )
+                        );
+
+        User currentUser =
+                userRepository.findById(
+                                currentUserId
+                        )
+                        .orElseThrow(() ->
+                                new BAMPException(
+                                        Errors.USER_NOT_FOUND
+                                )
+                        );
 
         Ticket ticket = Ticket.builder()
                 .title(request.getTitle())
                 .description(request.getDescription())
                 .priority(request.getPriority())
-                .status(request.getStatus() != null ? request.getStatus() : TicketStatus.NOT_STARTED)
+                .status(
+                        request.getStatus() != null
+                                ? request.getStatus()
+                                : TicketStatus.NOT_STARTED
+                )
                 .type(request.getType())
                 .startDate(request.getStartDate())
                 .targetDate(request.getTargetDate())
-                .actualCompletionDate(request.getActualCompletionDate())
-                .deploymentDate(request.getDeploymentDate())
+                .actualCompletionDate(
+                        request.getActualCompletionDate()
+                )
+                .deploymentDate(
+                        request.getDeploymentDate()
+                )
                 .storyPoint(request.getStoryPoint())
                 .application(application)
                 .createdBy(currentUser)
                 .build();
 
-        Ticket savedTicket = ticketRepository.save(ticket);
+        Ticket savedTicket =
+                ticketRepository.save(ticket);
+
+        TicketAssignment assignment = null;
+
         if (request.getAssignedToId() != null) {
-            assignTicketInternal(savedTicket.getId(), request.getAssignedToId(), currentUserId);
+
+            User assignedTo =
+                    userRepository.findById(
+                                    request.getAssignedToId()
+                            )
+                            .orElseThrow(() ->
+                                    new BAMPException(
+                                            Errors.USER_NOT_FOUND
+                                    )
+                            );
+
+            assignment =
+                    TicketAssignment.builder()
+                            .ticket(savedTicket)
+                            .assignedTo(assignedTo)
+                            .assignedBy(currentUser)
+                            .build();
+
+            ticketAssignmentRepository.save(
+                    assignment
+            );
         }
 
-        return TicketDtoMapper.toDto(savedTicket);
+        return TicketDtoMapper.toDto(
+                savedTicket,
+                assignment
+        );
     }
 
     public void assignTicket(Long ticketId, Long assignedToId, Long currentUserId) {
@@ -94,10 +150,6 @@ public class TicketService {
         assignmentRepository.save(newAssignment);
     }
 
-    private void assignTicketInternal(Long ticketId, Long assignedToId, Long currentUserId) {
-        assignTicket(ticketId, assignedToId, currentUserId);
-    }
-
     public void deassignTicket(Long ticketId, Long currentUserId) {
         TicketAssignment assignment = assignmentRepository.findByTicketIdAndActiveTrue(ticketId)
                 .orElseThrow(() -> new BAMPException(Errors.TICKET_NOT_ASSIGNED));
@@ -112,24 +164,56 @@ public class TicketService {
         assignmentRepository.save(assignment);
     }
 
-    public TicketResponse updateTicket(Long ticketId, Long currentUserId, UpdateTicketRequest request) {
+    @Transactional
+    public TicketResponse updateTicket(
+            Long ticketId,
+            Long currentUserId,
+            UpdateTicketRequest request
+    ) {
+
         Ticket ticket = ticketRepository.findById(ticketId)
-                .orElseThrow(() -> new BAMPException(Errors.TICKET_NOT_FOUND));
+                .orElseThrow(() ->
+                        new BAMPException(
+                                Errors.TICKET_NOT_FOUND
+                        ));
 
         User currentUser = userRepository.findById(currentUserId)
-                .orElseThrow(() -> new BAMPException(Errors.USER_NOT_FOUND));
+                .orElseThrow(() ->
+                        new BAMPException(
+                                Errors.USER_NOT_FOUND
+                        ));
 
-        boolean isAssignedToUser = assignmentRepository.existsByTicketIdAndAssignedToIdAndActiveTrue(ticketId, currentUserId);
+        boolean assignedToUser =
+                assignmentRepository
+                        .existsByTicketIdAndAssignedToIdAndActiveTrue(
+                                ticketId,
+                                currentUserId
+                        );
 
         for (FieldUpdateRequest update : request.getUpdates()) {
+
             String fieldName = update.getFieldName();
             String newValue = update.getNewValue();
             String oldValue = null;
 
             switch (fieldName) {
+
                 case "status" -> {
-                    oldValue = ticket.getStatus() != null ? ticket.getStatus().name() : null;
-                    ticket.setStatus(TicketStatus.valueOf(newValue));
+
+                    if (!assignedToUser) {
+                        throw new BAMPException(
+                                Errors.INSUFFICIENT_PERMISSION
+                        );
+                    }
+
+                    oldValue =
+                            ticket.getStatus() != null
+                                    ? ticket.getStatus().name()
+                                    : null;
+
+                    ticket.setStatus(
+                            TicketStatus.valueOf(newValue)
+                    );
                 }
 
                 case "title" -> {
@@ -143,8 +227,14 @@ public class TicketService {
                 }
 
                 case "priority" -> {
-                    oldValue = ticket.getPriority() != null ? ticket.getPriority().name() : null;
-                    ticket.setPriority(Priority.valueOf(newValue));
+                    oldValue =
+                            ticket.getPriority() != null
+                                    ? ticket.getPriority().name()
+                                    : null;
+
+                    ticket.setPriority(
+                            Priority.valueOf(newValue)
+                    );
                 }
 
                 case "startDate" -> {
@@ -158,8 +248,12 @@ public class TicketService {
                 }
 
                 case "actualCompletionDate" -> {
-                    oldValue = ticket.getActualCompletionDate();
-                    ticket.setActualCompletionDate(newValue);
+                    oldValue =
+                            ticket.getActualCompletionDate();
+
+                    ticket.setActualCompletionDate(
+                            newValue
+                    );
                 }
 
                 case "deploymentDate" -> {
@@ -168,8 +262,19 @@ public class TicketService {
                 }
 
                 case "storyPoint" -> {
-                    oldValue = ticket.getStoryPoint() != null ? ticket.getStoryPoint().toString() : null;
-                    ticket.setStoryPoint(newValue != null && !newValue.isBlank() ? Integer.parseInt(newValue) : null);
+
+                    oldValue =
+                            ticket.getStoryPoint() != null
+                                    ? ticket.getStoryPoint()
+                                    .toString()
+                                    : null;
+
+                    ticket.setStoryPoint(
+                            newValue != null &&
+                                    !newValue.isBlank()
+                                    ? Integer.parseInt(newValue)
+                                    : null
+                    );
                 }
 
                 case "headComment" -> {
@@ -182,37 +287,78 @@ public class TicketService {
                     ticket.setSpocComment(newValue);
                 }
 
-                default -> throw new BAMPException(Errors.INVALID_FIELD_NAME);
+                default ->
+                        throw new BAMPException(
+                                Errors.INVALID_FIELD_NAME
+                        );
             }
 
-            TicketHistory history = TicketHistory.builder()
-                    .ticket(ticket)
-                    .fieldName(fieldName)
-                    .oldValue(oldValue)
-                    .newValue(newValue)
-                    .updatedBy(currentUser)
-                    .build();
-
-            historyRepository.save(history);
+            historyRepository.save(
+                    TicketHistory.builder()
+                            .ticket(ticket)
+                            .fieldName(fieldName)
+                            .oldValue(oldValue)
+                            .newValue(newValue)
+                            .updatedBy(currentUser)
+                            .build()
+            );
         }
 
-        Ticket updatedTicket = ticketRepository.save(ticket);
-        return TicketDtoMapper.toDto(updatedTicket);
+        Ticket updatedTicket =
+                ticketRepository.save(ticket);
+
+        TicketAssignment assignment =
+                assignmentRepository
+                        .findByTicketIdAndActiveTrue(
+                                ticketId
+                        )
+                        .orElse(null);
+
+        return TicketDtoMapper.toDto(
+                updatedTicket,
+                assignment
+        );
     }
 
     @Transactional(readOnly = true)
-    public List<TicketResponse> getTicketsByApplication(Long applicationId) {
-        return ticketRepository.findByApplicationIdOrdered(applicationId)
+    public List<TicketResponse> getTicketsByApplication(
+            Long applicationId
+    ) {
+
+        return ticketRepository
+                .findByApplicationIdOrdered(applicationId)
                 .stream()
-                .map(TicketDtoMapper::toDto)
+                .map(ticket -> {
+
+                    TicketAssignment assignment =
+                            assignmentRepository
+                                    .findByTicketIdAndActiveTrue(
+                                            ticket.getId()
+                                    )
+                                    .orElse(null);
+
+                    return TicketDtoMapper.toDto(
+                            ticket,
+                            assignment
+                    );
+                })
                 .toList();
     }
 
     @Transactional(readOnly = true)
-    public List<TicketResponse> getTicketsByUser(Long userId) {
-        return ticketRepository.findByAssignedToIdOrderByUpdatedAtDesc(userId)
+    public List<TicketResponse> getTicketsByUser(
+            Long userId
+    ) {
+
+        return assignmentRepository
+                .findByAssignedToIdAndActiveTrue(userId)
                 .stream()
-                .map(TicketDtoMapper::toDto)
+                .map(assignment ->
+                        TicketDtoMapper.toDto(
+                                assignment.getTicket(),
+                                assignment
+                        )
+                )
                 .toList();
     }
 
@@ -247,5 +393,26 @@ public class TicketService {
                 .holdTickets(ticketRepository.countByAssignedToIdAndStatus(userId, TicketStatus.HOLD))
                 .closedTickets(ticketRepository.countByAssignedToIdAndStatus(userId, TicketStatus.CLOSED))
                 .build();
+    }
+    @Transactional(readOnly = true)
+    public List<TicketAssignmentResponse>
+    getAssignmentHistory(Long ticketId) {
+
+        ticketRepository.findById(ticketId)
+                .orElseThrow(() ->
+                        new BAMPException(
+                                Errors.TICKET_NOT_FOUND
+                        )
+                );
+
+        return assignmentRepository
+                .findByTicketIdOrderByAssignedAtDesc(
+                        ticketId
+                )
+                .stream()
+                .map(
+                        TicketAssignmentMapper::toResponse
+                )
+                .toList();
     }
 }
