@@ -44,7 +44,7 @@ SecurityFilterChain defaultSecurityFilterChain(
                     .requestMatchers("/api/auth/**").permitAll()
                     .requestMatchers("/api/tickets/**").authenticated()
                     .requestMatchers("/api/applications/**").authenticated()
-                    .requestMatchers("/api/ticket-history/**").permitAll()
+                    .requestMatchers("/api/ticket-history/**").authenticated()
                     .requestMatchers("/api/users/**").authenticated()
                     .requestMatchers("/api/vapt/**").authenticated()
                     .requestMatchers("/api/vapt-history/**").authenticated()
