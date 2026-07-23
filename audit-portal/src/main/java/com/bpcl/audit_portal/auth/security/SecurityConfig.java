@@ -40,15 +40,14 @@ SecurityFilterChain defaultSecurityFilterChain(
             session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
         .authorizeHttpRequests(requests ->
             requests
-                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll() // <-- Add this
-                .requestMatchers("/api/auth/**").permitAll()
-                .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                .requestMatchers("/api/head/**").hasRole("HEAD")
-                .requestMatchers("/api/spoc/**").hasRole("SPOC")
-                .requestMatchers("/api/developer/**").hasRole("DEVELOPER")
-                .requestMatchers("/api/scrum-master/**").hasRole("SCRUM_MASTER")
-                .requestMatchers("/api/tickets/**").authenticated()
-                .requestMatchers("/api/applications/**").authenticated()
+                    .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                    .requestMatchers("/api/auth/**").permitAll()
+                    .requestMatchers("/api/tickets/**").authenticated()
+                    .requestMatchers("/api/applications/**").authenticated()
+                    .requestMatchers("/api/ticket-history/**").permitAll()
+                    .requestMatchers("/api/users/**").authenticated()
+                    .requestMatchers("/api/vapt/**").authenticated()
+                    .requestMatchers("/api/vapt-history/**").authenticated()
                 .anyRequest().authenticated())
         .addFilterBefore(authTokenFilter,
                 UsernamePasswordAuthenticationFilter.class)
