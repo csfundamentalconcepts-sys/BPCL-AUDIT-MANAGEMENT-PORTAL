@@ -10,12 +10,4 @@ import java.util.Optional;
 public interface ApplicationRepository extends JpaRepository<Application, Long> {
 
     Optional<Application> findByName(String name);
-
-    @Query("""
-    SELECT a
-    FROM User u
-    JOIN u.applications a
-    WHERE u.id = :userId
-    """)
-    List<Application> findApplicationsByUserId(Long userId);
 }

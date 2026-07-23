@@ -54,7 +54,6 @@ public class AuthTokenFilter extends OncePerRequestFilter {
                 String username = claims.get("userName", String.class);
                 Long userId = claims.get("userId", Long.class);
                 String role = claims.get("role", String.class);
-                List<Integer> applicationIds = claims.get("applicationIds", List.class);
 
                 User user = userRepository.findById(userId).orElse(null);
 
@@ -77,12 +76,6 @@ public class AuthTokenFilter extends OncePerRequestFilter {
                 }
 
                 List<GrantedAuthority> authorities = new ArrayList<>();
-
-                if (applicationIds != null) {
-                    authorities.addAll(applicationIds.stream()
-                            .map(id -> new SimpleGrantedAuthority("APP_" + id))
-                            .toList());
-                }
 
                 if (role != null) {
                     authorities.add(new SimpleGrantedAuthority("ROLE_" + role));

@@ -8,9 +8,7 @@ import java.util.Optional;
 
 public interface VaptAuditRepository extends JpaRepository<VaptAudit, Long> {
 
-    boolean existsByVaptCardIdAndAuditYear(Long cardId, Integer auditYear);
+    boolean existsByVaptCardId(Long cardId);
 
-    Optional<VaptAudit> findByVaptCardIdAndAuditYear(Long cardId, Integer auditYear);
-
-    List<VaptAudit> findByVaptCardIdOrderByAuditYearDesc(Long cardId);
+    List<VaptAudit> findByVaptCardId(Long cardId);
 }

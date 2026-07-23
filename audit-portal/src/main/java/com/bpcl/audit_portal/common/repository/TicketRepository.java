@@ -30,9 +30,4 @@ public interface TicketRepository extends JpaRepository<Ticket, Long> {
 
     Long countByApplicationIdAndStatus(Long applicationId, TicketStatus status);
 
-    List<Ticket> findByAssignedToIdOrderByUpdatedAtDesc(Long userId);
-
-    Long countByAssignedToId(Long userId);
-
-    Long countByAssignedToIdAndStatus(Long userId, TicketStatus status);
 }

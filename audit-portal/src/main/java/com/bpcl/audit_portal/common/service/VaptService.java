@@ -148,12 +148,10 @@ public class VaptService {
     @Transactional
     public VaptAuditResponse createVaptAudit(
             Long cardId,
-            Integer auditYear,
             Long userId) {
 
-        if (vaptAuditRepository.existsByVaptCardIdAndAuditYear(
-                cardId,
-                auditYear)) {
+        if (vaptAuditRepository.existsByVaptCardId(
+                cardId)) {
 
             throw new BAMPException(
                     Errors.VAPT_AUDIT_ALREADY_EXISTS);
@@ -171,7 +169,6 @@ public class VaptService {
 
         VaptAudit audit = VaptAudit.builder()
                 .vaptCard(card)
-                .auditYear(auditYear)
                 .status(VaptAuditStatus.OPEN)
                 .createdBy(currentUser)
                 .build();
@@ -181,7 +178,6 @@ public class VaptService {
         return VaptAuditResponse.builder()
                 .id(audit.getId())
                 .cardId(audit.getVaptCard().getId())
-                .auditYear(audit.getAuditYear())
                 .status(audit.getStatus())
                 .auditInfo(
                         AuditInfoResponse.builder()
@@ -220,12 +216,11 @@ public class VaptService {
             throw new BAMPException(Errors.VAPT_CARD_NOT_FOUND);
         }
 
-        List<VaptAudit> vaptAudits = vaptAuditRepository.findByVaptCardIdOrderByAuditYearDesc(cardId);
+        List<VaptAudit> vaptAudits = vaptAuditRepository.findByVaptCardId(cardId);
         return vaptAudits.stream()
                 .map(audit -> VaptAuditResponse.builder()
                         .id(audit.getId())
                         .cardId(audit.getVaptCard().getId())
-                        .auditYear(audit.getAuditYear())
                         .status(audit.getStatus())
                         .auditInfo(
                                 AuditInfoResponse.builder()
@@ -291,7 +286,7 @@ public class VaptService {
 
         List<VaptAudit> audits =
                 vaptAuditRepository
-                        .findByVaptCardIdOrderByAuditYearDesc(cardId);
+                        .findByVaptCardId(cardId);
 
         for (VaptAudit audit : audits) {
 
@@ -389,7 +384,7 @@ public class VaptService {
 
         List<VaptAudit> audits =
                 vaptAuditRepository
-                        .findByVaptCardIdOrderByAuditYearDesc(cardId);
+                        .findByVaptCardId(cardId);
 
         for (VaptAudit audit : audits) {
 
@@ -575,46 +570,68 @@ public class VaptService {
     @Transactional(readOnly = true)
     public List<CweStatsResponse> getCweStats() {
 
-        return vulnerabilityRepository.getCweStats(NewOrRepeat.NEW,VulnerabilityStatus.OPEN)
+        return vulnerabilityRepository
+                .getCweStats(
+                        NewOrRepeat.NEW,
+                        VulnerabilityStatus.OPEN
+                )
                 .stream()
                 .map(row -> CweStatsResponse.builder()
-                        .cwe((String) row[0])
+                        .cveCwe((String) row[0])
                         .count(((Number) row[1]).longValue())
                         .build())
                 .toList();
     }
     @Transactional(readOnly = true)
-    public List<CweStatsResponse> getApplicationCweStats(Long applicationId) {
+    public List<CweStatsResponse> getApplicationCweStats(
+            Long applicationId
+    ) {
 
         return vulnerabilityRepository
-                .getApplicationCweStats(applicationId, NewOrRepeat.NEW,VulnerabilityStatus.OPEN)
+                .getApplicationCweStats(
+                        applicationId,
+                        NewOrRepeat.NEW,
+                        VulnerabilityStatus.OPEN
+                )
                 .stream()
                 .map(row -> CweStatsResponse.builder()
-                        .cwe((String) row[0])
+                        .cveCwe((String) row[0])
                         .count(((Number) row[1]).longValue())
                         .build())
                 .toList();
     }
     @Transactional(readOnly = true)
-    public List<CweStatsResponse> getAuditCweStats(Long auditId) {
+    public List<CweStatsResponse> getAuditCweStats(
+            Long auditId
+    ) {
 
         return vulnerabilityRepository
-                .getAuditCweStats(auditId, NewOrRepeat.NEW,VulnerabilityStatus.OPEN)
+                .getAuditCweStats(
+                        auditId,
+                        NewOrRepeat.NEW,
+                        VulnerabilityStatus.OPEN
+                )
                 .stream()
                 .map(row -> CweStatsResponse.builder()
-                        .cwe((String) row[0])
+                        .cveCwe((String) row[0])
                         .count(((Number) row[1]).longValue())
                         .build())
                 .toList();
     }
     @Transactional(readOnly = true)
-    public List<CweStatsResponse> getPhaseCweStats(Long phaseId) {
+    public List<CweStatsResponse> getPhaseCweStats(
+            Long phaseId
+    ) {
 
         return vulnerabilityRepository
-                .getPhaseCweStats(phaseId, NewOrRepeat.NEW,VulnerabilityStatus.OPEN)
+                .getPhaseCweStats(
+                        phaseId,
+                        NewOrRepeat.NEW,
+                        VulnerabilityStatus.OPEN
+                )
                 .stream()
                 .map(row -> CweStatsResponse.builder()
-                        .cwe((String) row[0])
+                        .cveCwe((String) row[0])
                         .count(((Number) row[1]).longValue())
                         .build())
                 .toList();

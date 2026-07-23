@@ -26,13 +26,6 @@ public class UserDetailsImplementation implements UserDetails {
     @JsonIgnore
     private String password;
 
-    /**
-     * Stores:
-     * ROLE_ADMIN
-     * ROLE_MANAGER
-     * APP_1
-     * APP_2
-     */
     private Collection<? extends GrantedAuthority> authorities;
 
     public UserDetailsImplementation(
@@ -57,34 +50,12 @@ public class UserDetailsImplementation implements UserDetails {
                 )
         );
 
-//        if (user.getApplications() != null) {
-//
-//            authorities.addAll(
-//                    user.getApplications()
-//                            .stream()
-//                            .map(application ->
-//                                    new SimpleGrantedAuthority(
-//                                            "APP_" + application.getId()
-//                                    )
-//                            )
-//                            .toList()
-//            );
-//        }
-
         return new UserDetailsImplementation(
                 user.getId(),
                 user.getUserName(),
                 user.getPassword(),
                 authorities
         );
-    }
-
-    public boolean hasApplicationAccess(Long applicationId) {
-
-        String authority = "APP_" + applicationId;
-
-        return authorities.stream()
-                .anyMatch(a -> a.getAuthority().equals(authority));
     }
 
     @Override

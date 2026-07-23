@@ -44,7 +44,6 @@ public class VaptController {
         return ResponseEntity.ok(
                 vaptService.createVaptAudit(
                         request.getCardId(),
-                        request.getAuditYear(),
                         currentUser.getId()
                 )
         );
