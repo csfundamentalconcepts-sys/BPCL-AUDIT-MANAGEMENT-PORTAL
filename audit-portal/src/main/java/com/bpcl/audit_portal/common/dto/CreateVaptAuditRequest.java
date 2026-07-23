@@ -8,6 +8,4 @@ public class CreateVaptAuditRequest {
 
     @NotNull
     private Long cardId;
-    @NotNull
-    private Integer auditYear;
 }

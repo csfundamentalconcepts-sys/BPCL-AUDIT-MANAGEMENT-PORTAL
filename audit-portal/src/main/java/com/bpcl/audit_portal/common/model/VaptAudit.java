@@ -8,12 +8,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(
-        name = "vapt_audits",
-        uniqueConstraints = {
-                @UniqueConstraint(columnNames = {"vapt_card_id", "audit_year"})
-        }
-)
+@Table(name = "vapt_audits")
 @Getter
 @Setter
 @NoArgsConstructor

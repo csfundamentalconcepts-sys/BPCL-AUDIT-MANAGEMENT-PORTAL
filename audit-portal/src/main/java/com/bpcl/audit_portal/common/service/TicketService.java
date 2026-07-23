@@ -387,13 +387,22 @@ public class TicketService {
     @Transactional(readOnly = true)
     public TicketSummaryResponse getTicketSummaryByUser(Long userId) {
         return TicketSummaryResponse.builder()
-                .totalTickets(ticketRepository.countByAssignedToId(userId))
-                .inProgressTickets(ticketRepository.countByAssignedToIdAndStatus(userId, TicketStatus.IN_PROGRESS))
-                .notStartedTickets(ticketRepository.countByAssignedToIdAndStatus(userId, TicketStatus.NOT_STARTED))
-                .holdTickets(ticketRepository.countByAssignedToIdAndStatus(userId, TicketStatus.HOLD))
-                .closedTickets(ticketRepository.countByAssignedToIdAndStatus(userId, TicketStatus.CLOSED))
+                .totalTickets(ticketAssignmentRepository.countAssignedTickets(userId))
+                .inProgressTickets(
+                        ticketAssignmentRepository.countAssignedTicketsByStatus(
+                                userId, TicketStatus.IN_PROGRESS))
+                .notStartedTickets(
+                        ticketAssignmentRepository.countAssignedTicketsByStatus(
+                                userId, TicketStatus.NOT_STARTED))
+                .holdTickets(
+                        ticketAssignmentRepository.countAssignedTicketsByStatus(
+                                userId, TicketStatus.HOLD))
+                .closedTickets(
+                        ticketAssignmentRepository.countAssignedTicketsByStatus(
+                                userId, TicketStatus.CLOSED))
                 .build();
     }
+
     @Transactional(readOnly = true)
     public List<TicketAssignmentResponse>
     getAssignmentHistory(Long ticketId) {

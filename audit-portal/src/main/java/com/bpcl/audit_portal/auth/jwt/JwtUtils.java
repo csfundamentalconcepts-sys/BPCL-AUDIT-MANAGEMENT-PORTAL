@@ -34,14 +34,12 @@ public class JwtUtils {
     public String generateJwtToken(
             Long userId,
             String userName,
-            String role,
-            List<Long> applicationIds
+            String role
     ){
         return Jwts.builder()
                 .claim("role", role)
                 .claim("userId", userId)
                 .claim("userName", userName)
-                .claim("applicationIds", applicationIds)
                 .issuedAt(new Date())
                 .expiration(new Date((new Date()).getTime() + jwtExpirationMs))
                 .signWith(key())

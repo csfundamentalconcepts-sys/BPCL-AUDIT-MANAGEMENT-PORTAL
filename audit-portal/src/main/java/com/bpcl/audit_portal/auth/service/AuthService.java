@@ -208,8 +208,7 @@ public class AuthService {
         String jwtToken = jwtUtils.generateJwtToken(
                 user.getId(),
                 user.getUserName(),
-                user.getRole().getRoleName().name(),
-                applicationIds
+                user.getRole().getRoleName().name()
         );
 
         LoginResponse response = new LoginResponse(
@@ -256,8 +255,7 @@ public class AuthService {
         String jwtToken = jwtUtils.generateJwtToken(
                 user.getId(),
                 user.getUserName(),
-                user.getRole().getRoleName().name(),
-                applicationIds
+                user.getRole().getRoleName().name()
         );
 
         String role = user.getRole()
