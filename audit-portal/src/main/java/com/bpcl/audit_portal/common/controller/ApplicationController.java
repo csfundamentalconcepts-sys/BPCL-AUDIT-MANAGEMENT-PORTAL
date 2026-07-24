@@ -3,6 +3,7 @@ package com.bpcl.audit_portal.common.controller;
 import com.bpcl.audit_portal.auth.model.UserDetailsImplementation;
 import com.bpcl.audit_portal.common.dto.ApplicationResponse;
 import com.bpcl.audit_portal.common.dto.CreateApplicationRequest;
+import com.bpcl.audit_portal.common.dto.UserDto;
 import com.bpcl.audit_portal.common.service.ApplicationService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -69,8 +70,7 @@ public class ApplicationController {
     @GetMapping("/assigned")
     public List<ApplicationResponse> getAssignedApplications(
             @AuthenticationPrincipal UserDetailsImplementation currentUser
-    ) {
-
+    ){
         return applicationService.getAssignedApplications(
                 currentUser.getId()
         );
@@ -81,5 +81,11 @@ public class ApplicationController {
     public List<ApplicationResponse> getAllApplications() {
 
         return applicationService.getAllApplications();
+    }
+
+    @GetMapping("/{applicationId}/users-assigned-to-application")
+    public List<UserDto> getAllUsersAssignedToApplication(@PathVariable Long applicationId) {
+
+        return applicationService.getAllUsersAssignedToApplication(applicationId);
     }
 }

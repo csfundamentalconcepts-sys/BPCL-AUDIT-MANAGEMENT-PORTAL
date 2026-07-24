@@ -2,9 +2,11 @@ package com.bpcl.audit_portal.common.service;
 
 import com.bpcl.audit_portal.common.dto.ApplicationResponse;
 import com.bpcl.audit_portal.common.dto.CreateApplicationRequest;
+import com.bpcl.audit_portal.common.dto.UserDto;
 import com.bpcl.audit_portal.common.exceptions.BAMPException;
 import com.bpcl.audit_portal.common.exceptions.Errors;
 import com.bpcl.audit_portal.common.mapper.ApplicationMapper;
+import com.bpcl.audit_portal.common.mapper.UserDtoMapper;
 import com.bpcl.audit_portal.common.model.Application;
 import com.bpcl.audit_portal.common.model.ApplicationAssignment;
 import com.bpcl.audit_portal.common.model.User;
@@ -228,5 +230,12 @@ public class ApplicationService {
         applicationAssignmentRepository.save(
                 assignment
         );
+    }
+    public List<UserDto> getAllUsersAssignedToApplication(Long applicationId) {
+        return applicationAssignmentRepository
+                .findAssignedUsersByApplicationId(applicationId)
+                .stream()
+                .map(UserDtoMapper::toDto)
+                .toList();
     }
 }
