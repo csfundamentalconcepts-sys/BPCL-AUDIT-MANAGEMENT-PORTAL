@@ -75,6 +75,18 @@ public class ApplicationService {
 
         applicationRepository.save(application);
 
+        ApplicationAssignment assignment =
+                ApplicationAssignment.builder()
+                        .application(application)
+                        .assignedTo(currentUser)
+                        .assignedBy(currentUser)
+                        .active(true)
+                        .build();
+
+        applicationAssignmentRepository.save(
+                assignment
+        );
+
         return ApplicationMapper.toDto(application);
     }
 
