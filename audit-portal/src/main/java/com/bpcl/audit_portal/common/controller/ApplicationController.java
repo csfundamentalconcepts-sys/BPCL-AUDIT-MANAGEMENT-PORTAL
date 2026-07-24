@@ -4,6 +4,7 @@ import com.bpcl.audit_portal.auth.model.UserDetailsImplementation;
 import com.bpcl.audit_portal.common.dto.ApplicationResponse;
 import com.bpcl.audit_portal.common.dto.CreateApplicationRequest;
 import com.bpcl.audit_portal.common.service.ApplicationService;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -36,7 +37,7 @@ public class ApplicationController {
     }
 
     @PostMapping("/{applicationId}/assign/{userId}")
-    public void assignApplication(
+    public ResponseEntity<?> assignApplication(
             @PathVariable Long applicationId,
             @PathVariable Long userId,
             @AuthenticationPrincipal UserDetailsImplementation currentUser
@@ -47,10 +48,11 @@ public class ApplicationController {
                 userId,
                 currentUser.getId()
         );
+        return ResponseEntity.ok("Successfully Assigned!");
     }
 
     @DeleteMapping("/{applicationId}/de-assign/{userId}")
-    public void deassignApplication(
+    public ResponseEntity<?> deassignApplication(
             @PathVariable Long applicationId,
             @PathVariable Long userId,
             @AuthenticationPrincipal UserDetailsImplementation currentUser
@@ -61,6 +63,7 @@ public class ApplicationController {
                 userId,
                 currentUser.getId()
         );
+        return ResponseEntity.ok("Successfully Deassigned!");
     }
 
     @GetMapping("/assigned")
