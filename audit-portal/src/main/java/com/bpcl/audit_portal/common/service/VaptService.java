@@ -22,6 +22,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 @Service
 public class VaptService {
@@ -279,97 +280,106 @@ public class VaptService {
             VaptAuditPhase phase,
             String vulnerabilityId) {
 
-        Long cardId =
-                phase.getVaptAudit()
-                        .getVaptCard()
-                        .getId();
+        boolean exists =
+                vulnerabilityRepository.existsInPreviousAudits(
+                        phase.getVaptAudit().getVaptCard().getId(),
+                        phase.getVaptAudit().getId(),
+                        vulnerabilityId
+                );
 
-        List<VaptAudit> audits =
-                vaptAuditRepository
-                        .findByVaptCardId(cardId);
-
-        for (VaptAudit audit : audits) {
-
-            if (audit.getId().equals(
-                    phase.getVaptAudit().getId())) {
-                continue;
-            }
-
-            List<VaptAuditPhase> phases =
-                    vaptAuditPhaseRepository
-                            .findByVaptAuditId(audit.getId());
-
-            for (VaptAuditPhase previous : phases) {
-
-                boolean exists =
-                        vulnerabilityRepository
-                                .findByVaptAuditPhaseId(
-                                        previous.getId())
-                                .stream()
-                                .anyMatch(v ->
-                                        vulnerabilityId.equals(
-                                                v.getVulnerabilityId()));
-
-                if (exists) {
-                    return NewOrRepeat.REPEAT;
-                }
-            }
-        }
-
-        return NewOrRepeat.NEW;
+        return exists
+                ? NewOrRepeat.REPEAT
+                : NewOrRepeat.NEW;
     }
 
+    private String getString(Map<String, Object> row, String key) {
+        return Objects.toString(row.get(key), "").trim();
+    }
     private Vulnerability buildVulnerability(
             Map<String, Object> row,
-            VaptAuditPhase phase) {
+            VaptAuditPhase phase,
+            User createdBy) {
 
-        Vulnerability vulnerability =
-                new Vulnerability();
+        Vulnerability vulnerability = new Vulnerability();
 
         vulnerability.setVulnerabilityId(
-                (String) row.get("Vulnerability ID"));
+                getString(row, "Vulnerability ID"));
 
         vulnerability.setAffectedAsset(
-                (String) row.get("Affected Asset"));
+                getString(row, "Affected Asset"));
 
         vulnerability.setName(
-                (String) row.get("Nameof the Vulnerability"));
+                getString(row, "Nameof the Vulnerability"));
 
         vulnerability.setDetailedObservation(
-                (String) row.get("Detailed observation"));
+                getString(row, "Detailed observation"));
 
         vulnerability.setCveCwe(
-                (String) row.get("CVE/CWE"));
+                getString(row, "CVE/CWE"));
 
         vulnerability.setCvss(
-                (String) row.get("CVSS"));
+                getString(row, "CVSS"));
 
         vulnerability.setEpss(
-                (String) row.get("EPSS"));
+                getString(row, "EPSS"));
 
         vulnerability.setSeverity(
-                (String) row.get("Severity"));
+                getString(row, "Severity"));
 
-        vulnerability.setStatus(
-                VulnerabilityStatus.valueOf(
-                        ((String) row.get("Status"))
-                                .trim()
-                                .toUpperCase()
-                ));
+        String status = getString(row, "Status");
+
+        if (status.isBlank()) {
+            vulnerability.setStatus(VulnerabilityStatus.NOT_PARSED);
+        } else {
+            try {
+                vulnerability.setStatus(
+                        VulnerabilityStatus.valueOf(
+                                status.trim()
+                                        .toUpperCase()
+                                        .replace(" ", "_")
+                        )
+                );
+            } catch (IllegalArgumentException ex) {
+                vulnerability.setStatus(VulnerabilityStatus.NOT_PARSED);
+            }
+        }
 
         vulnerability.setNewOrRepeat(
                 determineNewOrRepeat(
                         phase,
-                        (String) row.get("Vulnerability ID")
-                ));
+                        getString(row, "Vulnerability ID")
+                )
+        );
 
         vulnerability.setRecommendation(
-                (String) row.get("Recommendation"));
+                getString(row, "Recommendation"));
 
         vulnerability.setReference(
-                (String) row.get("Reference"));
+                getString(row, "Reference"));
 
         vulnerability.setVaptAuditPhase(phase);
+
+        Object pointsObj = row.get("Vulnerability Point");
+
+        if (pointsObj instanceof List<?> points) {
+
+            List<VulnerabilityPoint> vulnerabilityPoints =
+                    points.stream()
+                            .filter(Objects::nonNull)
+                            .map(Object::toString)
+                            .map(String::trim)
+                            .filter(s -> !s.isBlank())
+                            .map(value -> VulnerabilityPoint.builder()
+                                    .value(value)
+                                    .vulnerability(vulnerability)
+                                    .build())
+                            .toList();
+
+            vulnerability.setVulnerabilityPoints(
+                    new ArrayList<>(vulnerabilityPoints));
+        }
+
+        vulnerability.setCreatedBy(createdBy);
 
         return vulnerability;
     }
@@ -457,9 +467,7 @@ public class VaptService {
         for (Map<String, Object> row : parsed) {
 
             Vulnerability vulnerability =
-                    buildVulnerability(row, phase);
-
-            vulnerability.setCreatedBy(user);
+                    buildVulnerability(row, phase,user);
 
             vulnerability =
                     vulnerabilityRepository.save(vulnerability);
@@ -474,20 +482,31 @@ public class VaptService {
 
         return saved;
     }
-    @Transactional
     public List<VulnerabilityResponse> createNextPhase(
             Long auditId,
             MultipartFile file,
             String password,
             Long userId) {
 
+        List<Map<String, Object>> parsed =
+                parsePdf(file, password);
+
+        return createNextPhaseInternal(
+                auditId,
+                parsed,
+                userId
+        );
+    }
+    @Transactional
+    public List<VulnerabilityResponse> createNextPhaseInternal(
+            Long auditId,
+            List<Map<String, Object>> parsed,
+            Long userId) {
+
         VaptAuditPhase phase = createPhase(
                 auditId,
                 userId
         );
-
-        List<Map<String, Object>> parsed =
-                parsePdf(file, password);
 
         List<Vulnerability> saved =
                 saveVulnerabilities(parsed, phase,userId);
