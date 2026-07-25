@@ -447,14 +447,19 @@ public class VaptService {
     @Transactional
     public List<Vulnerability> saveVulnerabilities(
             List<Map<String, Object>> parsed,
-            VaptAuditPhase phase) {
+            VaptAuditPhase phase,
+            Long userId) {
 
         List<Vulnerability> saved = new ArrayList<>();
+
+        User user = userRepository.findById(userId).orElseThrow(()-> new BAMPException(Errors.USER_NOT_FOUND));
 
         for (Map<String, Object> row : parsed) {
 
             Vulnerability vulnerability =
                     buildVulnerability(row, phase);
+
+            vulnerability.setCreatedBy(user);
 
             vulnerability =
                     vulnerabilityRepository.save(vulnerability);
@@ -485,7 +490,7 @@ public class VaptService {
                 parsePdf(file, password);
 
         List<Vulnerability> saved =
-                saveVulnerabilities(parsed, phase);
+                saveVulnerabilities(parsed, phase,userId);
 
         return saved.stream()
                 .map(vulnerability -> {
