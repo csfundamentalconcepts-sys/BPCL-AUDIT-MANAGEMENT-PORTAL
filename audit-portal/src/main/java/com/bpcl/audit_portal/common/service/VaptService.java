@@ -688,9 +688,9 @@ public class VaptService {
     @Transactional(readOnly = true)
     public VulnerabilityStatsResponse getPhaseSummary(Long phaseId) {
 
-        return VulnerabilityStatsMapper.toResponse(
-                vulnerabilityRepository.getPhaseSummary(phaseId)
-        );
+        Object result = vulnerabilityRepository.getPhaseSummary(phaseId);
+
+        return VulnerabilityStatsMapper.toResponse((Object[]) result);
     }
     @Transactional
     public VulnerabilityResponse updateVulnerability(
