@@ -664,25 +664,31 @@ public class VaptService {
     @Transactional(readOnly = true)
     public VulnerabilityStatsResponse getGlobalSummary() {
 
-        return VulnerabilityStatsMapper.toResponse(
-                vulnerabilityRepository.getSystemSummary()
-        );
+        Object[] stats = vulnerabilityRepository
+                .getSystemSummary()
+                .get(0);
+
+        return VulnerabilityStatsMapper.toResponse(stats);
     }
 
     @Transactional(readOnly = true)
     public VulnerabilityStatsResponse getApplicationSummary(Long applicationId) {
 
-        return VulnerabilityStatsMapper.toResponse(
-                vulnerabilityRepository.getApplicationSummary(applicationId)
-        );
+        Object[] stats = vulnerabilityRepository
+                .getApplicationSummary(applicationId)
+                .get(0);
+
+        return VulnerabilityStatsMapper.toResponse(stats);
     }
 
     @Transactional(readOnly = true)
     public VulnerabilityStatsResponse getAuditSummary(Long auditId) {
 
-        return VulnerabilityStatsMapper.toResponse(
-                vulnerabilityRepository.getAuditSummary(auditId)
-        );
+        Object[] stats = vulnerabilityRepository
+                .getAuditSummary(auditId)
+                .get(0);
+
+        return VulnerabilityStatsMapper.toResponse(stats);
     }
 
     @Transactional(readOnly = true)
