@@ -111,20 +111,30 @@ public enum Errors {
     VAPT_AUDIT_CANNOT_BE_CLOSED(HttpStatus.BAD_REQUEST, 1035L,
             "All vulnerabilities of the last phase must be CLOSED before closing the audit."),
 
-    USER_ALREADY_ASSIGNED(HttpStatus.CONFLICT, 1036L,
+    USER_ALREADY_ASSIGNED(
+            HttpStatus.CONFLICT,
+            1036L,
             "User is already assigned."),
 
-    USER_ASSIGNMENT_NOT_FOUND(HttpStatus.NOT_FOUND, 1037L,
+    USER_ASSIGNMENT_NOT_FOUND(
+            HttpStatus.NOT_FOUND,
+            1037L,
             "User assignment not found."),
 
-    INVALID_USER_HIERARCHY(HttpStatus.BAD_REQUEST, 1038L,
+    INVALID_USER_HIERARCHY(
+            HttpStatus.BAD_REQUEST,
+            1038L,
             "Invalid hierarchy assignment."
     ),
-    APPLICATION_ALREADY_ASSIGNED(HttpStatus.CONFLICT, 1039L,
-                "Application already assigned."
+    APPLICATION_ALREADY_ASSIGNED(
+            HttpStatus.CONFLICT,
+            1039L,
+            "Application already assigned."
     ),
-    APPLICATION_NOT_ASSIGNED(HttpStatus.BAD_REQUEST, 1040L,
-                "Application is not assigned."
+    APPLICATION_NOT_ASSIGNED(
+            HttpStatus.BAD_REQUEST,
+            1040L,
+            "Application is not assigned."
     ),
     INVALID_VULNERABILITY_ASSIGNMENT(
             HttpStatus.BAD_REQUEST,
@@ -145,7 +155,11 @@ public enum Errors {
             HttpStatus.BAD_REQUEST,
             1042L,
             "Ticket is not assigned."
-    ),;
+    ),
+    TICKET_ALREADY_ASSIGNED(
+            HttpStatus.BAD_REQUEST,
+            1043L,
+            "Ticket already assigned.");
 
     private final HttpStatus httpStatus;
     private final Long errorCode;

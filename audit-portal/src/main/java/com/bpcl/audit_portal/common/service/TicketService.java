@@ -133,12 +133,9 @@ public class TicketService {
         User assignedBy = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new BAMPException(Errors.USER_NOT_FOUND));
 
-        assignmentRepository.findByTicketIdAndActiveTrue(ticketId)
-                .ifPresent(oldAssignment -> {
-                    oldAssignment.setActive(false);
-                    oldAssignment.setDeassignedAt(LocalDateTime.now());
-                    oldAssignment.setDeassignedBy(assignedBy);
-                });
+        if (assignmentRepository.findByTicketIdAndActiveTrue(ticketId).isPresent()) {
+            throw new BAMPException(Errors.TICKET_ALREADY_ASSIGNED);
+        }
 
         TicketAssignment newAssignment = TicketAssignment.builder()
                 .ticket(ticket)
