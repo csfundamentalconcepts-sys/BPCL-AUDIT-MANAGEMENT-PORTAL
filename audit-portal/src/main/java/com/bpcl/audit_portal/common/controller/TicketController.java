@@ -42,15 +42,6 @@ public class TicketController {
             @AuthenticationPrincipal UserDetailsImplementation userDetails) {
         ticketService.assignTicket(ticketId, assignedToId, userDetails.getId());
     }
-
-    @PostMapping("/{ticketId}/deassign")
-    @PreAuthorize("hasRole('SCRUM_MASTER')")
-    public void deassignTicket(
-            @PathVariable Long ticketId,
-            @AuthenticationPrincipal UserDetailsImplementation userDetails) {
-        ticketService.deassignTicket(ticketId, userDetails.getId());
-    }
-
     @PatchMapping("/{ticketId}")
     @PreAuthorize("hasAnyRole('SCRUM_MASTER','DEVELOPER')")
     public TicketResponse updateTicket(

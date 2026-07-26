@@ -6,6 +6,7 @@ import com.bpcl.audit_portal.common.model.VaptAudit;
 import com.bpcl.audit_portal.common.model.VaptCard;
 import com.bpcl.audit_portal.common.service.VaptService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -221,6 +222,7 @@ public class VaptController {
     }
 
     @PostMapping("/vulnerabilities/{vulnerabilityId}/assign")
+    @PreAuthorize("hasRole('SCRUM_MASTER')")
     public ResponseEntity<Void> assignVulnerability(
             @PathVariable Long vulnerabilityId,
             @RequestBody AssignVulnerabilityRequest request,
@@ -229,19 +231,6 @@ public class VaptController {
         vaptService.assignVulnerability(
                 vulnerabilityId,
                 request.getDeveloperId(),
-                currentUser.getId()
-        );
-
-        return ResponseEntity.ok().build();
-    }
-
-    @PatchMapping("/vulnerabilities/{vulnerabilityId}/deassign")
-    public ResponseEntity<Void> deassignVulnerability(
-            @PathVariable Long vulnerabilityId,
-            @AuthenticationPrincipal UserDetailsImplementation currentUser) {
-
-        vaptService.deassignVulnerability(
-                vulnerabilityId,
                 currentUser.getId()
         );
 

@@ -123,7 +123,19 @@ public class TicketService {
         );
     }
 
+    public void deassignTicket(Long ticketId, User designedBy) {
+        TicketAssignment assignment = assignmentRepository.findByTicketIdAndActiveTrue(ticketId)
+                .orElseThrow(() -> new BAMPException(Errors.TICKET_NOT_ASSIGNED));
+
+        assignment.setActive(false);
+        assignment.setDeassignedAt(LocalDateTime.now());
+        assignment.setDeassignedBy(designedBy);
+
+        assignmentRepository.save(assignment);
+    }
+
     public void assignTicket(Long ticketId, Long assignedToId, Long currentUserId) {
+
         Ticket ticket = ticketRepository.findById(ticketId)
                 .orElseThrow(() -> new BAMPException(Errors.TICKET_NOT_FOUND));
 
@@ -134,33 +146,16 @@ public class TicketService {
                 .orElseThrow(() -> new BAMPException(Errors.USER_NOT_FOUND));
 
         if (assignmentRepository.findByTicketIdAndActiveTrue(ticketId).isPresent()) {
-            throw new BAMPException(Errors.TICKET_ALREADY_ASSIGNED);
+            deassignTicket(ticketId,assignedBy);
         }
-
         TicketAssignment newAssignment = TicketAssignment.builder()
                 .ticket(ticket)
                 .assignedTo(assignedTo)
                 .assignedBy(assignedBy)
                 .active(true)
                 .build();
-
         assignmentRepository.save(newAssignment);
     }
-
-    public void deassignTicket(Long ticketId, Long currentUserId) {
-        TicketAssignment assignment = assignmentRepository.findByTicketIdAndActiveTrue(ticketId)
-                .orElseThrow(() -> new BAMPException(Errors.TICKET_NOT_ASSIGNED));
-
-        User deassignedBy = userRepository.findById(currentUserId)
-                .orElseThrow(() -> new BAMPException(Errors.USER_NOT_FOUND));
-
-        assignment.setActive(false);
-        assignment.setDeassignedAt(LocalDateTime.now());
-        assignment.setDeassignedBy(deassignedBy);
-
-        assignmentRepository.save(assignment);
-    }
-
     @Transactional
     public TicketResponse updateTicket(
             Long ticketId,
