@@ -565,28 +565,20 @@ public class VaptService {
                  .map(VaptAuditPhaseMapper :: toResponse)
                  .toList();
     }
+@Transactional(readOnly = true)
+public VulnerabilityStatsResponse getVulnerabilityStats(Long userId) {
 
-    @Transactional(readOnly = true)
-    public VulnerabilityStatsResponse getVulnerabilityStats(Long userId) {
+    Object[] result = vulnerabilityRepository.getVulnerabilityStatsByUser(userId);
 
-        Object[] stats = vulnerabilityRepository.getVulnerabilityStatsByUser(userId);
+    Object[] row = (Object[]) result[0];
 
-        if (stats == null || stats.length < 4) {
-            return VulnerabilityStatsResponse.builder()
-                    .total(0L)
-                    .open(0L)
-                    .closed(0L)
-                    .notPasrsed(0L)
-                    .build();
-        }
-
-        return VulnerabilityStatsResponse.builder()
-                .total(((Number) stats[0]).longValue())
-                .open(((Number) stats[1]).longValue())
-                .closed(((Number) stats[2]).longValue())
-                .notPasrsed(((Number) stats[3]).longValue())
-                .build();
-    }
+    return VulnerabilityStatsResponse.builder()
+            .total(((Number) row[0]).longValue())
+            .open(((Number) row[1]).longValue())
+            .closed(((Number) row[2]).longValue())
+            .notPasrsed(((Number) row[3]).longValue())
+            .build();
+}
 
     @Transactional(readOnly = true)
     public VulnerabilityStatsResponse getSystemVulnerabilityStats() {
