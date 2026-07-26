@@ -63,6 +63,30 @@ public class VaptService {
     }
 
     @Transactional
+    public void deassignVulnerability(
+            Long vulnerabilityId,
+            User currentUser
+    ) {
+        VulnerabilityAssignment assignment =
+                vulnerabilityAssignmentRepository
+                        .findByVulnerabilityIdAndActiveTrue(
+                                vulnerabilityId
+                        )
+                        .orElseThrow(() ->
+                                new BAMPException(
+                                        Errors.VULNERABILITY_NOT_ASSIGNED
+                                ));
+
+        assignment.setActive(false);
+        assignment.setDeassignedAt(LocalDateTime.now());
+        assignment.setDeassignedBy(currentUser);
+
+        vulnerabilityAssignmentRepository.save(
+                assignment
+        );
+    }
+
+    @Transactional
     public void assignVulnerability(
             Long vulnerabilityId,
             Long developerId,
@@ -71,11 +95,6 @@ public class VaptService {
         User currentUser = userRepository.findById(currentUserId)
                 .orElseThrow(() ->
                         new BAMPException(Errors.USER_NOT_FOUND));
-
-        if (currentUser.getRole().getRoleName() != AppRole.SCRUM_MASTER) {
-            throw new BAMPException(
-                    Errors.INVALID_VULNERABILITY_ASSIGNMENT);
-        }
 
         User developer = userRepository.findById(developerId)
                 .orElseThrow(() ->
@@ -92,11 +111,11 @@ public class VaptService {
                                 new BAMPException(
                                         Errors.VULNERABILITY_NOT_FOUND));
 
+
         vulnerabilityAssignmentRepository
                 .findByVulnerabilityIdAndActiveTrue(vulnerabilityId)
                 .ifPresent(existing -> {
-                    throw new BAMPException(
-                            Errors.USER_ALREADY_ASSIGNED);
+                    deassignVulnerability(vulnerabilityId,currentUser);
                 });
 
         VulnerabilityAssignment assignment =
@@ -507,7 +526,6 @@ public class VaptService {
                 auditId,
                 userId
         );
-
         List<Vulnerability> saved =
                 saveVulnerabilities(parsed, phase,userId);
 
@@ -565,36 +583,22 @@ public class VaptService {
                  .map(VaptAuditPhaseMapper :: toResponse)
                  .toList();
     }
-@Transactional(readOnly = true)
-public VulnerabilityStatsResponse getVulnerabilityStats(Long userId) {
-
-    Object[] result = vulnerabilityRepository.getVulnerabilityStatsByUser(userId);
-
-    Object[] row = (Object[]) result[0];
-
-    return VulnerabilityStatsResponse.builder()
-            .total(((Number) row[0]).longValue())
-            .open(((Number) row[1]).longValue())
-            .closed(((Number) row[2]).longValue())
-            .notPasrsed(((Number) row[3]).longValue())
-            .build();
-}
-
     @Transactional(readOnly = true)
-    public VulnerabilityStatsResponse getSystemVulnerabilityStats() {
+    public VulnerabilityStatsResponse getVulnerabilityStats(Long userId) {
 
-        Object[] stats = vulnerabilityRepository.getSystemVulnerabilityStats();
+        Object[] result = vulnerabilityRepository.getVulnerabilityStatsByUser(userId);
+
+        Object[] row = (Object[]) result[0];
 
         return VulnerabilityStatsResponse.builder()
-                .total(((Number) stats[0]).longValue())
-                .open(((Number) stats[1]).longValue())
-                .closed(((Number) stats[2]).longValue())
-                .notPasrsed(((Number) stats[3]).longValue())
+                .total(((Number) row[0]).longValue())
+                .open(((Number) row[1]).longValue())
+                .closed(((Number) row[2]).longValue())
+                .notPasrsed(((Number) row[3]).longValue())
                 .build();
     }
     @Transactional(readOnly = true)
     public List<CweStatsResponse> getCweStats() {
-
         return vulnerabilityRepository
                 .getCweStats(
                         NewOrRepeat.NEW,
@@ -611,7 +615,6 @@ public VulnerabilityStatsResponse getVulnerabilityStats(Long userId) {
     public List<CweStatsResponse> getApplicationCweStats(
             Long applicationId
     ) {
-
         return vulnerabilityRepository
                 .getApplicationCweStats(
                         applicationId,
@@ -629,7 +632,6 @@ public VulnerabilityStatsResponse getVulnerabilityStats(Long userId) {
     public List<CweStatsResponse> getAuditCweStats(
             Long auditId
     ) {
-
         return vulnerabilityRepository
                 .getAuditCweStats(
                         auditId,
@@ -1028,53 +1030,7 @@ public VulnerabilityStatsResponse getVulnerabilityStats(Long userId) {
         audit.setStatus(VaptAuditStatus.CLOSED);
         vaptAuditRepository.save(audit);
     }
-    @Transactional
-    public void deassignVulnerability(
-            Long vulnerabilityId,
-            Long userId
-    ) {
 
-        Vulnerability vulnerability =
-                vulnerabilityRepository
-                        .findById(vulnerabilityId)
-                        .orElseThrow(() ->
-                                new BAMPException(
-                                        Errors.VULNERABILITY_NOT_FOUND
-                                ));
-
-        User currentUser =
-                userRepository.findById(userId)
-                        .orElseThrow(() ->
-                                new BAMPException(
-                                        Errors.USER_NOT_FOUND
-                                ));
-
-        VulnerabilityAssignment assignment =
-                vulnerabilityAssignmentRepository
-                        .findByVulnerabilityIdAndActiveTrue(
-                                vulnerabilityId
-                        )
-                        .orElseThrow(() ->
-                                new BAMPException(
-                                        Errors.VULNERABILITY_NOT_ASSIGNED
-                                ));
-
-        if (!assignment.getAssignedBy().getId()
-                .equals(userId)) {
-
-            throw new BAMPException(
-                    Errors.UNAUTHORIZED
-            );
-        }
-
-        assignment.setActive(false);
-        assignment.setDeassignedAt(LocalDateTime.now());
-        assignment.setDeassignedBy(currentUser);
-
-        vulnerabilityAssignmentRepository.save(
-                assignment
-        );
-    }
     @Transactional(readOnly = true)
     public List<VulnerabilityResponse>
     getAssignedVulnerabilities(
