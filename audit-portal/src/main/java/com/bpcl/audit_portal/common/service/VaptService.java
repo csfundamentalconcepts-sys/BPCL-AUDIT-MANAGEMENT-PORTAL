@@ -571,6 +571,15 @@ public class VaptService {
 
         Object[] stats = vulnerabilityRepository.getVulnerabilityStatsByUser(userId);
 
+        if (stats == null || stats.length < 4) {
+            return VulnerabilityStatsResponse.builder()
+                    .total(0L)
+                    .open(0L)
+                    .closed(0L)
+                    .notPasrsed(0L)
+                    .build();
+        }
+
         return VulnerabilityStatsResponse.builder()
                 .total(((Number) stats[0]).longValue())
                 .open(((Number) stats[1]).longValue())
