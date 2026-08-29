@@ -69,11 +69,11 @@ public class VaptController {
     }
 
     @PostMapping("/audit/{auditId}/phase")
-    public ResponseEntity<List<VulnerabilityResponse>> createPhase(
+    public ResponseEntity<?> createPhase(
             @PathVariable Long auditId,
             @RequestParam("file") MultipartFile file,
             @RequestParam("password") String password,
-            @AuthenticationPrincipal UserDetailsImplementation currentUser) {
+            @AuthenticationPrincipal UserDetailsImplementation currentUser){
 
         return ResponseEntity.ok(
                 vaptService.createNextPhase(
@@ -84,7 +84,6 @@ public class VaptController {
                 )
         );
     }
-
     @GetMapping("/audit/{auditId}/phase")
     public ResponseEntity<?> getPhase(
             @PathVariable Long auditId) {
