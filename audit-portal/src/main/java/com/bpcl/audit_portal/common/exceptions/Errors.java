@@ -159,7 +159,12 @@ public enum Errors {
     TICKET_ALREADY_ASSIGNED(
             HttpStatus.BAD_REQUEST,
             1043L,
-            "Ticket already assigned.");
+            "Ticket already assigned."),
+
+    INVALID_FILE_TYPE(
+            HttpStatus.BAD_REQUEST,
+            1044L,
+            "Only .pdf files are allowed");;
 
     private final HttpStatus httpStatus;
     private final Long errorCode;

@@ -1,4 +1,6 @@
 package com.bpcl.audit_portal.common.service;
+import com.bpcl.audit_portal.common.clients.BlobStorageService;
+import com.bpcl.audit_portal.common.clients.ServiceBusPublisher;
 import com.bpcl.audit_portal.common.constants.*;
 import com.bpcl.audit_portal.common.dto.*;
 import com.bpcl.audit_portal.common.exceptions.BAMPException;
@@ -10,15 +12,12 @@ import com.bpcl.audit_portal.common.model.*;
 import com.bpcl.audit_portal.common.repository.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.reactive.function.BodyInserters;
-import org.springframework.web.reactive.function.client.WebClient;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -33,12 +32,13 @@ public class VaptService {
     private final VaptAuditRepository vaptAuditRepository;
     private final UserRepository userRepository;
     private final VaptAuditPhaseRepository vaptAuditPhaseRepository;
-    private final WebClient webClient;
     private final VulnerabilityRepository vulnerabilityRepository;
     private final VulnerabilityAssignmentRepository vulnerabilityAssignmentRepository;
     private final VaptVulnerabilityHistoryRepository vulnerabilityHistoryRepository;
     private final VulnerabilityAssignmentMapper vulnerabilityAssignmentMapper;
-
+    private final BlobStorageService blobStorageService;
+    private final ServiceBusPublisher serviceBusPublisher;
+    private final PdfParsingRequestRepository pdfParsingRequestRepository;
     public VaptService(
             VaptCardRepository vaptCardRepository,
             ApplicationRepository applicationRepository,
@@ -48,18 +48,22 @@ public class VaptService {
             VulnerabilityAssignmentRepository vulnerabilityAssignmentRepository,
             VaptVulnerabilityHistoryRepository vulnerabilityHistoryRepository,
             VulnerabilityAssignmentMapper vulnerabilityAssignmentMapper,
-            WebClient webClient) {
-
+            BlobStorageService blobStorageService,
+            ServiceBusPublisher serviceBusPublisher,
+            PdfParsingRequestRepository pdfParsingRequestRepository
+          ) {
+        this.blobStorageService = blobStorageService;
         this.vaptCardRepository = vaptCardRepository;
         this.applicationRepository = applicationRepository;
         this.vaptAuditRepository = vaptAuditRepository;
         this.userRepository = userRepository;
         this.vaptAuditPhaseRepository = vaptAuditPhaseRepository;
         this.vulnerabilityRepository = vulnerabilityRepository;
-        this.webClient = webClient;
         this.vulnerabilityAssignmentRepository = vulnerabilityAssignmentRepository;
         this.vulnerabilityHistoryRepository = vulnerabilityHistoryRepository;
         this.vulnerabilityAssignmentMapper=vulnerabilityAssignmentMapper;
+        this.serviceBusPublisher = serviceBusPublisher;
+        this.pdfParsingRequestRepository = pdfParsingRequestRepository;
     }
 
     @Transactional
@@ -282,19 +286,6 @@ public class VaptService {
 
         return vaptAuditPhaseRepository.save(phase);
     }
-
-    public List<Map<String, Object>> parsePdf(MultipartFile file, String password) {
-
-        return webClient.post()
-                .uri("/parse-pdf")
-                .contentType(MediaType.MULTIPART_FORM_DATA)
-                .body(BodyInserters.fromMultipartData("file", file.getResource())
-                        .with("password", password))
-                .retrieve()
-                .bodyToMono(new ParameterizedTypeReference<List<Map<String, Object>>>() {})
-                .block();
-    }
-
     private NewOrRepeat determineNewOrRepeat(
             VaptAuditPhase phase,
             String vulnerabilityId) {
@@ -476,8 +467,10 @@ public class VaptService {
     @Transactional
     public List<Vulnerability> saveVulnerabilities(
             List<Map<String, Object>> parsed,
-            VaptAuditPhase phase,
+            Long phaseId,
             Long userId) {
+
+        VaptAuditPhase phase = vaptAuditPhaseRepository.findById(phaseId).orElseThrow(()-> new BAMPException(Errors.VAPT_PHASE_NOT_FOUND));
 
         List<Vulnerability> saved = new ArrayList<>();
 
@@ -501,57 +494,96 @@ public class VaptService {
 
         return saved;
     }
-    public List<VulnerabilityResponse> createNextPhase(
+
+    @Transactional
+    public ParsingInPrgressResponse createNextPhase(
             Long auditId,
             MultipartFile file,
             String password,
-            Long userId) {
-
-        List<Map<String, Object>> parsed =
-                parsePdf(file, password);
-
-        return createNextPhaseInternal(
-                auditId,
-                parsed,
-                userId
-        );
-    }
-    @Transactional
-    public List<VulnerabilityResponse> createNextPhaseInternal(
-            Long auditId,
-            List<Map<String, Object>> parsed,
             Long userId) {
 
         VaptAuditPhase phase = createPhase(
                 auditId,
                 userId
         );
-        List<Vulnerability> saved =
-                saveVulnerabilities(parsed, phase,userId);
 
-        return saved.stream()
-                .map(vulnerability -> {
+        String applicationName = vaptAuditRepository
+                .findApplicationNameByAuditId(auditId)
+                .orElseThrow(() -> new BAMPException(Errors.APPLICATION_NOT_FOUND));
 
-                    VulnerabilityAssignment assignment =
-                            vulnerabilityAssignmentRepository
-                                    .findByVulnerabilityIdAndActiveTrue(
-                                            vulnerability.getId()
-                                    )
-                                    .orElse(null);
+        String originalFilename = file.getOriginalFilename();
 
-                    return VulnerabilityMapper.toResponse(
-                            vulnerability,
-                            assignment
+        if (originalFilename == null ||
+                !originalFilename.toLowerCase().endsWith(".pdf")) {
+            throw new BAMPException(Errors.INVALID_FILE_TYPE);
+        }
+
+        int dotIndex = originalFilename.lastIndexOf('.');
+
+        String fileNameWithoutExtension =
+                originalFilename.substring(0, dotIndex);
+
+        String timestamp = LocalDateTime.now()
+                .format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
+
+        String blobName =
+                applicationName +
+                        "/" +
+                        fileNameWithoutExtension +
+                        "_" +
+                        timestamp +
+                        ".pdf";
+
+        try {
+            blobStorageService.uploadFile(file, blobName);
+            PdfParsingRequest request =
+                    pdfParsingRequestRepository.save(
+                            PdfParsingRequest.builder()
+                                    .phaseId(phase.getId())
+                                    .userId(userId)
+                                    .blobName(blobName)
+                                    .password(password)
+                                    .status(ParsingStatus.IN_PROGRESS)
+                                    .build()
                     );
-                })
-                .toList();
-    }
+            PdfParsingMessage message =
+                    PdfParsingMessage.builder()
+                            .phaseId(phase.getId())
+                            .userId(userId)
+                            .blobName(blobName)
+                            .password(password)
+                            .build();
 
+            serviceBusPublisher.publish(message);
+
+            return ParsingInPrgressResponse.builder()
+                    .phaseId(phase.getId())
+                    .message("System started working on your request.")
+                    .status(ParsingStatus.IN_PROGRESS)
+                    .build();
+
+        } catch (Exception ex) {
+            try {
+                blobStorageService.deleteFile(blobName);
+            } catch (Exception e){
+                log.error("Create Next Phase failed and error occurred while deleting blob file",e);
+            }
+            throw new BAMPException(Errors.INTERNAL_ISSUE);
+        }
+    }
     @Transactional(readOnly = true)
-    public List<VulnerabilityResponse> getVulnerabilities(Long phaseId) {
+    public List<?> getVulnerabilities(Long phaseId) {
 
         if (!vaptAuditPhaseRepository.existsById(phaseId)) {
             throw new BAMPException(Errors.VAPT_PHASE_NOT_FOUND);
+        }
+
+        if(pdfParsingRequestRepository.existsByPhaseIdAndStatus(phaseId,ParsingStatus.IN_PROGRESS)){
+            return ParsingInPrgressResponse.builder()
+                    .phaseId(phaseId)
+                    .message("File already uploaded")
+                    .status(ParsingStatus.IN_PROGRESS)
+                    .build();
         }
 
         return vulnerabilityRepository.findByVaptAuditPhaseId(phaseId)
