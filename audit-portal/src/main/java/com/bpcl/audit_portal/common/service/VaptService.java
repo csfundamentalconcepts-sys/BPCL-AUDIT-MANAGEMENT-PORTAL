@@ -579,11 +579,11 @@ public class VaptService {
         }
 
         if(pdfParsingRequestRepository.existsByPhaseIdAndStatus(phaseId,ParsingStatus.IN_PROGRESS)){
-            return ParsingInPrgressResponse.builder()
+            return List.of(ParsingInPrgressResponse.builder()
                     .phaseId(phaseId)
                     .message("File already uploaded")
                     .status(ParsingStatus.IN_PROGRESS)
-                    .build();
+                    .build());
         }
 
         return vulnerabilityRepository.findByVaptAuditPhaseId(phaseId)
