@@ -2,11 +2,11 @@ FROM maven:3.9.11-eclipse-temurin-25 AS builder
 
 WORKDIR /app
 
-COPY pom.xml .
+COPY audit-portal/pom.xml .
 
 RUN mvn dependency:go-offline
 
-COPY src ./src
+COPY audit-portal/src ./src
 
 RUN mvn clean package -DskipTests
 
