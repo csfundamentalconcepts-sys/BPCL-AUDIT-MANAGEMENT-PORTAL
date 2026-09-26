@@ -4,6 +4,7 @@ import com.azure.storage.blob.BlobClient;
 import com.azure.storage.blob.BlobContainerClient;
 import com.bpcl.audit_portal.common.exceptions.BAMPException;
 import com.bpcl.audit_portal.common.exceptions.Errors;
+import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -14,10 +15,6 @@ import java.io.IOException;
 public class BlobStorageService {
 
     private final BlobContainerClient containerClient;
-
-    public BlobStorageService(BlobContainerClient containerClient) {
-        this.containerClient = containerClient;
-    }
 
     public void uploadFile(
             MultipartFile file,

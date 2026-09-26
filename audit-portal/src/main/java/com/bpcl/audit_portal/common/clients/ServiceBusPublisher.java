@@ -7,27 +7,24 @@ import com.bpcl.audit_portal.common.exceptions.BAMPException;
 import com.bpcl.audit_portal.common.exceptions.Errors;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 @Service
-@RequiredArgsConstructor
+
 public class ServiceBusPublisher {
 
     private final ServiceBusSenderClient senderClient;
-    private final ObjectMapper objectMapper;
 
-    public ServiceBusPublisher(ServiceBusSenderClient senderClient, ObjectMapper objectMapper) {
+    public ServiceBusPublisher(ServiceBusSenderClient senderClient) {
         this.senderClient = senderClient;
-        this.objectMapper = objectMapper;
     }
 
     public void publish(PdfParsingMessage message) {
 
         try {
-
+            final ObjectMapper mapper = new ObjectMapper();
             String payload =
-                    objectMapper.writeValueAsString(message);
+                    mapper.writeValueAsString(message);
 
             senderClient.sendMessage(
                     new ServiceBusMessage(payload)
